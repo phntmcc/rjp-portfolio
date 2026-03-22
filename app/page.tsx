@@ -11,15 +11,6 @@ export const metadata: Metadata = {
 	alternates: {
 		canonical: "/",
 	},
-	openGraph: {
-		title: site.title,
-		description: site.description,
-		url: "/",
-	},
-	twitter: {
-		title: site.title,
-		description: site.description,
-	},
 };
 
 export default async function Home() {
