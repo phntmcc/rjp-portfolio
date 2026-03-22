@@ -1,36 +1,97 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# RJP Portfolio
 
-## Getting Started
+Modern portfolio site built with Next.js App Router, Tailwind CSS v4, and Supabase-backed photography management.
 
-First, run the development server:
+## Highlights
+
+- Fast, responsive portfolio UI for projects and creative work
+- Photography gallery with metadata-aware rendering
+- Admin photography workflows backed by Supabase
+- CI checks for linting, type safety, and production build validation
+
+## Tech Stack
+
+- Next.js 16 (App Router)
+- React 19 + TypeScript
+- Tailwind CSS v4
+- Supabase
+- Biome + ESLint
+- GitHub Actions (CI)
+
+## Local Development
+
+### 1) Install dependencies
+
+```bash
+npm install
+```
+
+### 2) Configure environment variables
+
+Copy `.env.example` into `.env.local` and fill in the values:
+
+```bash
+# macOS / Linux
+cp .env.example .env.local
+
+# Windows PowerShell
+Copy-Item .env.example .env.local
+```
+
+Required variables:
+
+- `NEXT_PUBLIC_SITE_URL`
+- `NEXT_PUBLIC_SUPABASE_URL`
+- `NEXT_PUBLIC_SUPABASE_ANON_KEY` (or `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY`)
+- `SUPABASE_SERVICE_ROLE_KEY`
+- `SUPABASE_ADMIN_EMAILS`
+- `NEXT_PUBLIC_SUPABASE_ADMIN_EMAILS`
+
+Optional variables:
+
+- `SUPABASE_PHOTOS_BUCKET` (default: `photos`)
+- `NEXT_PUBLIC_GOOGLE_MAPS_API_KEY`
+
+### 3) Run the app
 
 ```bash
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+## Quality Checks
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+Run all pre-deploy checks:
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+```bash
+npm run predeploy
+```
 
-## Learn More
+Or run them individually:
 
-To learn more about Next.js, take a look at the following resources:
+```bash
+npm run lint
+npm run typecheck
+npm run build
+```
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+## Supabase Setup
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+Run SQL migration(s):
 
-## Deploy on Vercel
+- `supabase/sql/001_photos.sql`
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+## Deployment
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+This project is designed to deploy on Vercel. Once the GitHub repo is connected to Vercel, pushes to `main` can deploy automatically.
+
+Recommended branch workflow:
+
+- Pull requests run CI (`lint`, `typecheck`, `build`)
+- Merge into `main`
+- Vercel auto-deploys `main`
+
+## Security Notes
+
+- Never commit `.env.local` or any secret-bearing `.env*` file
+- `SUPABASE_SERVICE_ROLE_KEY` must only be set in secure server-side environments (Vercel project settings), never exposed client-side
+- If a secret is ever committed, rotate it immediately in the provider dashboard

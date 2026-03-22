@@ -1,26 +1,209 @@
 @import "tailwindcss";
 
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+	--background: #0a0a0a;
+	--foreground: #ededed;
 }
 
 @theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+	--color-background: var(--background);
+	--color-foreground: var(--foreground);
+	--font-sans: var(--font-geist-sans), system-ui, sans-serif;
+	--font-mono: var(--font-geist-mono), ui-monospace, monospace;
+	--font-serif: var(--font-playfair), ui-serif, Georgia, serif;
 }
 
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+	background: var(--background);
+	color: var(--foreground);
+	font-family: var(--font-sans);
+}
+
+html {
+	scrollbar-gutter: stable;
+}
+
+@keyframes bento-in {
+	from {
+		opacity: 0;
+		transform: translateY(10px);
+	}
+	to {
+		opacity: 1;
+		transform: translateY(0);
+	}
+}
+
+@keyframes page-header-in {
+	from {
+		opacity: 0;
+		transform: translateY(6px);
+	}
+	to {
+		opacity: 1;
+		transform: translateY(0);
+	}
+}
+
+@keyframes resume-in {
+	from {
+		opacity: 0;
+		transform: translateY(8px);
+		filter: blur(2px);
+	}
+	to {
+		opacity: 1;
+		transform: translateY(0);
+		filter: blur(0);
+	}
+}
+
+@media (prefers-reduced-motion: reduce) {
+	.animate-bento-in {
+		animation: none;
+		opacity: 1;
+		transform: none;
+	}
+
+	.animate-resume-in {
+		animation: none;
+		opacity: 1;
+		transform: none;
+		filter: none;
+	}
+
+	.animate-page-header {
+		animation: none;
+		opacity: 1;
+		transform: none;
+	}
+
+	.bento-card-tilt {
+		transform: none;
+		transition: none;
+	}
+}
+
+.animate-bento-in {
+	animation-name: bento-in;
+	animation-duration: 0.75s;
+	animation-timing-function: cubic-bezier(0.22, 1, 0.36, 1);
+	animation-delay: var(--bento-delay, 0s);
+	animation-fill-mode: both;
+}
+
+.bento-card-tilt {
+	transform: perspective(1000px) rotateX(var(--rx, 0deg))
+		rotateY(var(--ry, 0deg)) scale(calc(var(--lift, 1) * 1.007));
+	transition: transform 0.22s ease-out;
+	backface-visibility: hidden;
+}
+
+.animate-page-header {
+	animation: page-header-in 0.65s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+}
+
+.animate-resume-in {
+	animation: resume-in 0.62s cubic-bezier(0.22, 1, 0.36, 1) both;
+	animation-delay: var(--resume-delay, 0s);
+}
+
+.route-stage {
+	position: relative;
+	min-height: 100%;
+	isolation: isolate;
+}
+
+.route-content {
+	will-change: transform, opacity;
+}
+
+.route-stage--covering .route-content {
+	animation: route-content-out 0.46s cubic-bezier(0.32, 0, 0.7, 0.12) both;
+}
+
+.route-stage--revealing .route-content {
+	animation: route-content-in 0.72s cubic-bezier(0.2, 1, 0.32, 1) both;
+}
+
+.resume-page .animate-bento-in {
+	animation-duration: 0.68s;
+}
+
+.bento-border-glow {
+	padding: 1px;
+	background:
+		radial-gradient(
+			ellipse 145% 145% at var(--mx, 50%) var(--my, 50%),
+			rgba(255, 255, 255, 0.31),
+			rgba(255, 255, 255, 0.105) 44%,
+			transparent 73%
+		),
+		radial-gradient(
+			ellipse 125% 125% at 50% 50%,
+			transparent 66%,
+			rgba(255, 255, 255, 0.125) 100%
+		);
+	-webkit-mask:
+		linear-gradient(#fff 0 0) content-box,
+		linear-gradient(#fff 0 0);
+	-webkit-mask-composite: xor;
+	mask:
+		linear-gradient(#fff 0 0) content-box,
+		linear-gradient(#fff 0 0);
+	mask-composite: exclude;
+}
+
+.dock-magnify {
+	transform: translate3d(0, 0, 0) scale(1);
+	transform-origin: 50% 100%;
+	color: #a3a3a3;
+	transition:
+		transform 0.5s cubic-bezier(0.22, 1, 0.36, 1),
+		color 0.35s ease;
+	backface-visibility: hidden;
+}
+
+.dock-magnify:hover {
+	transform: translate3d(0, 0, 0) scale(1.19565217);
+	color: #ffffff;
+}
+
+.adaptive-contrast {
+	color: #fff;
+	mix-blend-mode: difference;
+	text-shadow: 0 1px 1px rgb(0 0 0 / 0.3);
+}
+
+@keyframes route-content-out {
+	from {
+		opacity: 1;
+		transform: translateY(0);
+	}
+	to {
+		opacity: 0;
+		transform: translateY(-26vh);
+	}
+}
+
+@keyframes route-content-in {
+	from {
+		opacity: 0.9;
+		transform: translateY(26vh);
+	}
+	to {
+		opacity: 1;
+		transform: translateY(0);
+	}
+}
+
+@media (prefers-reduced-motion: reduce) {
+	.dock-magnify {
+		transition: none;
+	}
+
+	.route-stage--covering .route-content,
+	.route-stage--revealing .route-content {
+		animation: none;
+	}
 }
