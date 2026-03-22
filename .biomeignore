@@ -1,0 +1,7 @@
+# Build output (Biome must not lint Tailwind/Next emitted CSS here)
+.next/
+node_modules/
+out/
+dist/
+build/
+coverage/
