@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import { PageHeader } from "@/components/layout/page-header";
 import { PhotographyBoard } from "@/components/photography/photography-board";
 import { photographyContent } from "@/content/photography";
@@ -9,6 +10,23 @@ import {
 
 type PhotographyPageProps = {
 	searchParams: Promise<{ location?: string }>;
+};
+
+export const metadata: Metadata = {
+	title: "Photography",
+	description: photographyContent.subhead,
+	alternates: {
+		canonical: "/photography",
+	},
+	openGraph: {
+		title: "Photography | Robbie Patterson",
+		description: photographyContent.subhead,
+		url: "/photography",
+	},
+	twitter: {
+		title: "Photography | Robbie Patterson",
+		description: photographyContent.subhead,
+	},
 };
 
 export default async function PhotographyPage({
