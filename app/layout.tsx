@@ -26,10 +26,12 @@ const playfair = Playfair_Display({
 	subsets: ["latin"],
 });
 
+const siteUrl =
+	process.env.NEXT_PUBLIC_SITE_URL ?? "https://www.robbiejpatterson.com";
+const socialImagePath = "/images/Opengraph.png";
+
 export const metadata: Metadata = {
-	metadataBase: new URL(
-		process.env.NEXT_PUBLIC_SITE_URL ?? "https://robbiejpatterson.com",
-	),
+	metadataBase: new URL(siteUrl),
 	title: {
 		default: site.title,
 		template: `%s | ${site.name}`,
@@ -46,7 +48,7 @@ export const metadata: Metadata = {
 		description: site.description,
 		images: [
 			{
-				url: "/images/Opengraph.png",
+				url: socialImagePath,
 				width: 1200,
 				height: 630,
 				alt: `${site.name} social preview`,
@@ -57,7 +59,7 @@ export const metadata: Metadata = {
 		card: "summary_large_image",
 		title: site.title,
 		description: site.description,
-		images: ["/images/Opengraph.png"],
+		images: [socialImagePath],
 	},
 	robots: {
 		index: true,

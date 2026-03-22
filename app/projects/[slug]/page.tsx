@@ -1,5 +1,5 @@
-import type { Metadata } from "next";
 import { ArrowLeft } from "lucide-react";
+import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { PageHeader } from "@/components/layout/page-header";
 import { TransitionLink } from "@/components/navigation/transition-link";
@@ -52,6 +52,7 @@ export async function generateMetadata({
 			],
 		},
 		twitter: {
+			card: "summary_large_image",
 			title: `${project.name} | Robbie Patterson`,
 			description: project.summary,
 			images: [project.thumbSrc],
