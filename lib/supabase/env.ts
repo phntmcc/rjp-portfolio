@@ -6,6 +6,16 @@ function getRequiredEnv(name: string): string {
 	return value;
 }
 
+function getRequiredPublicEnv(
+	value: string | undefined,
+	name: "NEXT_PUBLIC_SUPABASE_URL" | "NEXT_PUBLIC_SUPABASE_ANON_KEY",
+): string {
+	if (!value) {
+		throw new Error(`Missing required environment variable: ${name}`);
+	}
+	return value;
+}
+
 function normalizeEmail(value: string) {
 	return value.trim().toLowerCase();
 }
@@ -18,14 +28,22 @@ function parseAdminEmailList(rawValue: string) {
 }
 
 export function getSupabaseUrl() {
-	return getRequiredEnv("NEXT_PUBLIC_SUPABASE_URL");
+	// Use direct env access so Turbopack can inline NEXT_PUBLIC_* in client code.
+	return getRequiredPublicEnv(
+		process.env.NEXT_PUBLIC_SUPABASE_URL,
+		"NEXT_PUBLIC_SUPABASE_URL",
+	);
 }
 
 export function getSupabasePublishableKey() {
-	return (
-		process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ??
-		process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY ??
-		getRequiredEnv("NEXT_PUBLIC_SUPABASE_ANON_KEY")
+	const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+	if (anonKey) return anonKey;
+
+	const publishableKey = process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY;
+	if (publishableKey) return publishableKey;
+
+	throw new Error(
+		"Missing required environment variable: NEXT_PUBLIC_SUPABASE_ANON_KEY",
 	);
 }
 
