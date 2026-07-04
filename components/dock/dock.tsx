@@ -60,9 +60,7 @@ export function Dock() {
 											<TransitionLink
 												href={item.href}
 												className={`${dockButtonClass} adaptive-contrast ${
-													active
-														? "!border-white/25 !bg-white/15"
-														: ""
+													active ? "!border-white/25 !bg-white/15" : ""
 												}`}
 												aria-label={item.label}
 												aria-current={active ? "page" : undefined}
