@@ -1,6 +1,7 @@
 "use client";
 
 import { Camera, FileText, Home, Layers } from "lucide-react";
+import { usePathname } from "next/navigation";
 import { Fragment } from "react";
 import { GitHubIcon } from "@/components/icons/github";
 import { LinkedInIcon } from "@/components/icons/linkedin";
@@ -25,7 +26,15 @@ const iconMap = {
 const dockButtonClass =
 	"dock-magnify absolute inset-0 flex items-center justify-center rounded-2xl border border-white/5 bg-white/5";
 
+function isItemActive(pathname: string, href: string) {
+	if (href === "/") return pathname === "/";
+	if (!href.startsWith("/")) return false;
+	return pathname === href || pathname.startsWith(`${href}/`);
+}
+
 export function Dock() {
+	const pathname = usePathname();
+
 	return (
 		<nav
 			className="pointer-events-none fixed inset-x-0 bottom-6 z-40 flex justify-center overflow-visible px-4"
@@ -35,6 +44,7 @@ export function Dock() {
 				<div className="pointer-events-auto flex items-center gap-2.5 overflow-visible rounded-2xl border border-white/10 bg-black/35 px-4 py-4 backdrop-blur-xl backdrop-saturate-150">
 					{homeContent.dock.map((item) => {
 						const Icon = iconMap[item.icon];
+						const active = isItemActive(pathname, item.href);
 
 						return (
 							<Fragment key={item.id}>
@@ -49,8 +59,13 @@ export function Dock() {
 										<TooltipTrigger asChild>
 											<TransitionLink
 												href={item.href}
-												className={`${dockButtonClass} adaptive-contrast`}
+												className={`${dockButtonClass} adaptive-contrast ${
+													active
+														? "!border-white/25 !bg-white/15"
+														: ""
+												}`}
 												aria-label={item.label}
+												aria-current={active ? "page" : undefined}
 												{...("newTab" in item &&
 													item.newTab && {
 														target: "_blank",
@@ -68,6 +83,12 @@ export function Dock() {
 											{item.label}
 										</TooltipContent>
 									</Tooltip>
+									{active ? (
+										<span
+											className="pointer-events-none absolute -bottom-1.5 left-1/2 size-1 -translate-x-1/2 rounded-full bg-white"
+											aria-hidden
+										/>
+									) : null}
 								</div>
 							</Fragment>
 						);
