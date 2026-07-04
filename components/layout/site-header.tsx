@@ -1,3 +1,4 @@
+import { Layers } from "lucide-react";
 import { CommandMenuTrigger } from "@/components/layout/command-menu";
 import { MarkLogo } from "@/components/layout/mark-logo";
 import { TransitionLink } from "@/components/navigation/transition-link";
@@ -7,7 +8,7 @@ import { SITE_CONTAINER_MAX_WIDTH_CLASS } from "@/lib/layout-constants";
 export function SiteHeader() {
 	return (
 		<header
-			className={`animate-page-header flex w-full ${SITE_CONTAINER_MAX_WIDTH_CLASS} shrink-0 items-center justify-between`}
+			className={`animate-page-header flex w-full ${SITE_CONTAINER_MAX_WIDTH_CLASS} shrink-0 items-center justify-between gap-3`}
 		>
 			<TransitionLink
 				href="/"
@@ -19,7 +20,16 @@ export function SiteHeader() {
 					{site.name}
 				</span>
 			</TransitionLink>
-			<CommandMenuTrigger className="rounded-full border border-white/15 bg-black/35 px-4 py-2 backdrop-blur-md transition hover:bg-black/50" />
+			<div className="flex items-center gap-2">
+				<TransitionLink
+					href="/projects"
+					className="flex items-center gap-1.5 rounded-full bg-white px-4 py-2 text-sm font-medium text-black transition hover:bg-white/85"
+				>
+					<Layers className="size-3.5 shrink-0" strokeWidth={2} />
+					<span>View Work</span>
+				</TransitionLink>
+				<CommandMenuTrigger className="hidden rounded-full border border-white/15 bg-black/35 px-4 py-2 backdrop-blur-md transition hover:bg-black/50 sm:block" />
+			</div>
 		</header>
 	);
 }
