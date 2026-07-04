@@ -85,7 +85,7 @@ export function Dock() {
 									</Tooltip>
 									{active ? (
 										<span
-											className="pointer-events-none absolute -bottom-1.5 left-1/2 size-1 -translate-x-1/2 rounded-full bg-white"
+											className="pointer-events-none absolute -bottom-3 left-1/2 size-1 -translate-x-1/2 rounded-full bg-white"
 											aria-hidden
 										/>
 									) : null}
