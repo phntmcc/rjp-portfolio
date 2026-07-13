@@ -58,7 +58,13 @@ export function ProjectGallery({ images }: ProjectGalleryProps) {
 		<>
 			<MasonryGallery>
 				{images.map((image, index) => (
-					<MasonryGalleryItem key={image.id} delay={0.12 + index * 0.06}>
+					<MasonryGalleryItem
+						key={image.id}
+						delay={0.12 + index * 0.06}
+						className={
+							image.width > image.height ? "[column-span:all]" : undefined
+						}
+					>
 						<button
 							type="button"
 							onClick={() => open(index)}

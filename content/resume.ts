@@ -14,13 +14,13 @@ export const resumeContent = {
 	header: {
 		label: "RESUME",
 		name: "Robbie Patterson",
-		title: "Product Designer & Full-Stack Builder",
+		title: "UX/UI Designer & Frontend Developer",
 		location: "Toronto, ON",
 		workStatus: "Canadian Citizen - USMCA (TN) Eligible",
 		photoSrc: "/images/portrait.jpg",
 		photoAlt: "Robbie Patterson profile photo",
 		summary:
-			"Designer-developer with 5+ years building products from first wireframe to shipped code. I blend UX thinking, front-end craft, and practical automation to move ideas into production fast.",
+			"UX/UI designer and frontend developer with 7+ years shipping production interfaces, from Figma concept to responsive code. Strong on visual craft, typography, and clean HTML, CSS, and JavaScript. Delivered ~60% average conversion lift across freelance clients and directed a team of three developers through full delivery cycles.",
 		actions: [
 			{ id: "email", label: "Email", href: contactMailto },
 			{
@@ -32,7 +32,7 @@ export const resumeContent = {
 			{
 				id: "download",
 				label: "Download PDF",
-				href: "/assets/Robbie_Patterson_Resume.pdf",
+				href: "/assets/Robbie-Patterson-Resume.pdf",
 				download: true,
 			},
 		] as const,
@@ -42,54 +42,65 @@ export const resumeContent = {
 		{
 			id: "wayward",
 			company: "Wayward",
-			role: "Full Stack Developer",
-			location: "New York, NY (Remote)",
+			role: "Frontend Developer & UI Engineer",
+			location: "Remote",
 			start: "Feb 2024",
 			end: "Jan 2026",
 			highlights: [
-				"Built core tooling in HTML, CSS, JavaScript, and jQuery plus Django API foundations that supported Wayward's 2025 acquisition.",
-				"Shipped AI-driven backend integrations that removed workflow bottlenecks and reduced manual processing.",
-				"Delivered a 30-day front-end refresh that improved load speed by 50% and accelerated partner onboarding.",
-				"Built scalable React and Next.js features and owned CI/CD delivery through GitHub Actions.",
+				"Translated Figma designs into clean, accessible, production-ready interfaces for media clients including CNN, Rolling Stone, and NBC.",
+				"Led a 30-day frontend overhaul in HTML, CSS, and JavaScript that improved load performance by ~50% and accelerated partner onboarding.",
+				"Owned features end to end, from design through implementation, on a component-based architecture built for consistency and speed.",
+				"Directed a team of three developers through full delivery cycles and shipped an AI content tool that sped up editorial workflows by over 50%.",
 			],
 		},
 		{
 			id: "cactus-marketing",
 			company: "Cactus Marketing",
-			role: "UX/UI Designer -> Full Stack Developer",
-			location: "Ottawa, ON (Remote)",
+			role: "UX/UI Designer & Frontend Developer",
+			location: "Remote",
 			start: "Feb 2022",
 			end: "Feb 2024",
 			highlights: [
-				"Started in UX/UI and became the go-to for product-style Webflow builds, including gated areas, CMS pages, and launch integrations.",
-				"Built a custom Python automation engine for CIRA migrations, cutting manual data entry from 90 minutes to about 15 seconds per record.",
-				"Led the full-stack build of Haller AI, an auth-gated SaaS platform with complex CMS architecture and third-party API integrations.",
-				"Partnered with CIRA to establish CI/CD and dev/staging environments for reliable auto-deploys and faster release cycles.",
-			],
-		},
-		{
-			id: "realtyshop",
-			company: "RealtyShop.ca",
-			role: "UX/UI Designer Intern",
-			location: "Toronto, ON (Remote)",
-			start: "Apr 2021",
-			end: "May 2021",
-			highlights: [
-				"Created complete real estate marketing packages, including custom websites and listing assets.",
-				"Designed property-specific layouts aligned to each listing and agent brand with consistent visual polish.",
-				"Delivered high-quality design assets under tight timelines for time-sensitive listings.",
+				"Hired as a UX/UI designer and became the primary frontend builder, delivering Webflow apps with gated content, CMS-driven pages, and third-party integrations.",
+				"Designed and built reusable UI component systems that standardized delivery and improved consistency across client projects.",
+				"Haller AI: owned brand identity, UX strategy, and web experience, then designed and built the full Webflow app for launch.",
+				"Redesigned marketing and product sites for Sapien, Matador, and TDJ Law, improving performance, accessibility, and consistency through component libraries.",
+				"Led a large-scale CIRA (.ca) CMS migration with a Python automation tool that cut manual publishing from 1 to 2 hours to about 15 seconds per article.",
 			],
 		},
 		{
 			id: "freelance",
 			company: "Freelance",
 			role: "UX/UI Designer",
-			location: "Toronto, ON (Remote)",
+			location: "Remote",
 			start: "Apr 2020",
 			end: "Present",
 			highlights: [
-				"Improved client conversion rates by about 60% through sharper UX decisions, clearer page structure, and better interaction design.",
-				"Designed and delivered end-to-end digital experiences, from early page flows to reusable component libraries, across multiple industries.",
+				"Improved client conversion rates by ~60% on average through strategic UI improvements and user-centered design across eCommerce and service businesses.",
+				"Designed and delivered end-to-end digital experiences, including full page builds, user flows, and reusable component libraries.",
+			],
+		},
+		{
+			id: "nft-contractor",
+			company: "NFT Contractor",
+			role: "UX/UI Designer & Webflow Developer",
+			location: "Remote",
+			start: "2021",
+			end: "2022",
+			highlights: [
+				"Designed and built high-traffic Webflow sites for NFT launches, supporting mint events and community growth under tight deadlines.",
+				"Built complete brand systems, including logo, type, color, and UI, then translated Figma designs into responsive, production-ready builds.",
+			],
+		},
+		{
+			id: "realtyshop",
+			company: "RealtyShop.ca",
+			role: "UX/UI Designer Intern",
+			location: "Remote",
+			start: "Apr 2021",
+			end: "May 2021",
+			highlights: [
+				"Designed complete real estate marketing packages, including custom property websites and visual identity systems, delivered under tight deadlines.",
 			],
 		},
 	] satisfies readonly ResumeExperience[],
@@ -97,28 +108,22 @@ export const resumeContent = {
 		label: "SKILLS",
 		groups: [
 			{
+				id: "design-ui",
+				title: "Design & UI",
+				items:
+					"Figma, Adobe Illustrator, Adobe Photoshop, UI/UX Design, Design Systems, Component Libraries, Typography, Visual Hierarchy, Brand Identity, Responsive Design, Accessibility (WCAG)",
+			},
+			{
 				id: "frontend",
-				title: "Frontend",
+				title: "Frontend Development",
 				items:
-					"JavaScript, jQuery, HTML5, CSS3, Responsive Design, AJAX/XHR, Accessibility (WCAG)",
+					"HTML, CSS, JavaScript (ES6+), Webflow, React, Next.js, TypeScript, Tailwind CSS, Cross-Browser & Performance Optimization",
 			},
 			{
-				id: "design",
-				title: "Design",
+				id: "platforms-tooling",
+				title: "Platforms & Tooling",
 				items:
-					"Figma, Adobe Suite, UI Systems, Prototyping, Conversion-Focused UX, Typography & Layout",
-			},
-			{
-				id: "backend-platforms",
-				title: "Backend & Platforms",
-				items:
-					"PHP, Python, Node.js, REST APIs, PostgreSQL, Webflow, WordPress",
-			},
-			{
-				id: "performance-seo",
-				title: "Performance & SEO",
-				items:
-					"Asset optimization, page speed tuning, lean build practices, semantic HTML",
+					"CMS-Driven Builds, Third-Party Integrations, Git, Figma-to-Code Handoff, Linear, Jira, Cursor, Claude Code, Midjourney",
 			},
 		] as const,
 	},
@@ -127,6 +132,6 @@ export const resumeContent = {
 		degree: "Diploma, Interactive Media Design",
 		institution: "Durham College, Ontario, Canada",
 		details:
-			"GPA 4.85/5.00 (Top Graduate, Dean's List/Honour Roll every semester).",
+			"GPA 4.85/5.00. Top Graduate, Dean's List and Honour Roll every semester.",
 	},
 } as const;

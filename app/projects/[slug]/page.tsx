@@ -1,28 +1,27 @@
-import { ArrowLeft } from "lucide-react";
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
-import { PageHeader } from "@/components/layout/page-header";
-import { TransitionLink } from "@/components/navigation/transition-link";
-import { ProjectGallery } from "@/components/projects/project-gallery";
-import { getInternalProjectBySlug, projectsContent } from "@/content/projects";
+import { CaseStudyPage } from "@/components/case-study/case-study-page";
+import {
+	getAllCaseStudySlugs,
+	getCaseStudyBySlug,
+	getCaseStudyNeighbors,
+} from "@/content/case-studies";
 
 type ProjectDetailPageProps = {
 	params: Promise<{ slug: string }>;
 };
 
 export function generateStaticParams() {
-	return projectsContent.items
-		.filter((item) => item.linkType === "internal")
-		.map((item) => ({ slug: item.slug }));
+	return getAllCaseStudySlugs().map((slug) => ({ slug }));
 }
 
 export async function generateMetadata({
 	params,
 }: ProjectDetailPageProps): Promise<Metadata> {
 	const { slug } = await params;
-	const project = getInternalProjectBySlug(slug);
+	const caseStudy = getCaseStudyBySlug(slug);
 
-	if (!project) {
+	if (!caseStudy) {
 		return {
 			title: "Project not found",
 			description: "The requested project could not be found.",
@@ -33,29 +32,31 @@ export async function generateMetadata({
 		};
 	}
 
+	const canonical = `/projects/${caseStudy.slug}`;
+
 	return {
-		title: project.name,
-		description: project.summary,
+		title: caseStudy.name,
+		description: caseStudy.tagline,
 		alternates: {
-			canonical: project.href,
+			canonical,
 		},
 		openGraph: {
-			title: `${project.name} | Robbie Patterson`,
-			description: project.summary,
-			url: project.href,
+			title: `${caseStudy.name} | Robbie Patterson`,
+			description: caseStudy.tagline,
+			url: canonical,
 			type: "article",
 			images: [
 				{
-					url: project.thumbSrc,
-					alt: project.thumbAlt,
+					url: caseStudy.hero.src,
+					alt: caseStudy.hero.alt,
 				},
 			],
 		},
 		twitter: {
 			card: "summary_large_image",
-			title: `${project.name} | Robbie Patterson`,
-			description: project.summary,
-			images: [project.thumbSrc],
+			title: `${caseStudy.name} | Robbie Patterson`,
+			description: caseStudy.tagline,
+			images: [caseStudy.hero.src],
 		},
 	};
 }
@@ -64,30 +65,12 @@ export default async function ProjectDetailPage({
 	params,
 }: ProjectDetailPageProps) {
 	const { slug } = await params;
-	const project = getInternalProjectBySlug(slug);
+	const caseStudy = getCaseStudyBySlug(slug);
+	const neighbors = getCaseStudyNeighbors(slug);
 
-	if (!project) {
+	if (!caseStudy || !neighbors) {
 		notFound();
 	}
 
-	return (
-		<main className="space-y-6">
-			<div className="animate-resume-in space-y-3">
-				<TransitionLink
-					href="/projects"
-					className="inline-flex items-center gap-1.5 text-sm text-neutral-500 transition hover:text-neutral-300"
-				>
-					<ArrowLeft className="size-4 shrink-0" />
-					All projects
-				</TransitionLink>
-				<PageHeader
-					eyebrow="Project"
-					title={project.name}
-					description={project.intro}
-					className="mb-0 space-y-2"
-				/>
-			</div>
-			<ProjectGallery images={project.gallery} />
-		</main>
-	);
+	return <CaseStudyPage caseStudy={caseStudy} neighbors={neighbors} />;
 }

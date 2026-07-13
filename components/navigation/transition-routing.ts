@@ -5,13 +5,25 @@ type RouterLike = {
 };
 
 export const PAGE_NAVIGATE_EVENT = "rjp:navigate";
+export const ROUTE_SETTLED_EVENT = "rjp:route-settled";
+
+export type CaseStudyNavDirection = "forward" | "backward";
 
 export type PageNavigateDetail = {
 	href: string;
 	navigate: () => void;
+	direction?: CaseStudyNavDirection;
+	destinationName?: string;
 };
 
-export function navigateWithTransition(router: RouterLike, href: string) {
+export function navigateWithTransition(
+	router: RouterLike,
+	href: string,
+	options?: {
+		direction?: CaseStudyNavDirection;
+		destinationName?: string;
+	},
+) {
 	if (typeof window === "undefined") {
 		router.push(href);
 		return;
@@ -20,6 +32,8 @@ export function navigateWithTransition(router: RouterLike, href: string) {
 	const detail: PageNavigateDetail = {
 		href,
 		navigate: () => router.push(href),
+		direction: options?.direction,
+		destinationName: options?.destinationName,
 	};
 
 	const navigationEvent = new CustomEvent<PageNavigateDetail>(
