@@ -23,18 +23,43 @@ export type LightboxPhoto = {
 	iso?: string | null;
 	aperture?: string | null;
 	shutterSpeed?: string | null;
+	thumbUrl?: string | null;
+	blurDataUrl?: string | null;
 };
 
-function LightboxImageFrame({ photo }: { photo: LightboxPhoto }) {
+function LightboxImageFrame({
+	photo,
+	onClose,
+}: {
+	photo: LightboxPhoto;
+	onClose: () => void;
+}) {
 	const [imageReady, setImageReady] = useState(false);
+	const previewSrc = photo.thumbUrl ?? photo.blurDataUrl ?? null;
+	const hasPreview = Boolean(previewSrc);
 
 	return (
-		<div
-			className={`relative inline-flex ${LIGHTBOX_IMAGE_MAX_HEIGHT_CLASS} max-w-full items-center justify-center overflow-hidden rounded-xl border border-white/10 bg-black/40`}
+		<button
+			type="button"
+			onClick={onClose}
+			aria-label="Close image viewer"
+			className={`pointer-events-auto relative inline-flex ${LIGHTBOX_IMAGE_MAX_HEIGHT_CLASS} max-w-full cursor-zoom-out items-center justify-center overflow-hidden rounded-xl border border-white/10 bg-black/40 p-0`}
 			style={{
 				aspectRatio: `${photo.width} / ${photo.height}`,
 			}}
 		>
+			{previewSrc ? (
+				<Image
+					src={previewSrc}
+					alt=""
+					aria-hidden
+					fill
+					unoptimized
+					placeholder={photo.blurDataUrl ? "blur" : "empty"}
+					blurDataURL={photo.blurDataUrl ?? undefined}
+					className={`scale-105 object-contain blur-sm transition-opacity duration-300 ${imageReady ? "opacity-0" : "opacity-100"}`}
+				/>
+			) : null}
 			<Image
 				src={photo.src}
 				alt={photo.alt}
@@ -46,12 +71,12 @@ function LightboxImageFrame({ photo }: { photo: LightboxPhoto }) {
 				onLoad={() => setImageReady(true)}
 				className={`h-auto ${LIGHTBOX_IMAGE_MAX_HEIGHT_CLASS} w-auto max-w-full object-contain transition-opacity duration-200 ${imageReady ? "opacity-100" : "opacity-0"}`}
 			/>
-			{!imageReady ? (
+			{!hasPreview && !imageReady ? (
 				<div className="absolute inset-0 flex items-center justify-center bg-black/40">
 					<div className="size-8 animate-spin rounded-full border-2 border-white/20 border-t-white/80" />
 				</div>
 			) : null}
-		</div>
+		</button>
 	);
 }
 
@@ -82,7 +107,7 @@ function LightboxControlButton({
 		<button
 			type="button"
 			onClick={onClick}
-			className={`absolute flex size-10 cursor-pointer items-center justify-center rounded-full border border-white/10 bg-black/60 text-neutral-200 transition hover:bg-black/80 hover:text-white focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white/70 ${className}`}
+			className={`pointer-events-auto absolute flex size-10 cursor-pointer items-center justify-center rounded-full border border-white/10 bg-black/60 text-neutral-200 transition hover:bg-black/80 hover:text-white focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white/70 ${className}`}
 			aria-label={ariaLabel}
 		>
 			{icon}
@@ -139,6 +164,9 @@ export function PhotoLightbox({
 
 	if (!activePhoto || typeof document === "undefined") return null;
 
+	const showCount = photos.length > 1;
+	const showFooter = showCount || showDetails;
+
 	return createPortal(
 		<div
 			className={`fixed inset-0 ${LIGHTBOX_LAYER_Z_INDEX_CLASS} flex items-center justify-center p-4 sm:p-8`}
@@ -148,27 +176,38 @@ export function PhotoLightbox({
 		>
 			<button
 				type="button"
-				className="absolute inset-0 border-0 bg-black/78 backdrop-blur-md"
+				className="lightbox-backdrop-in absolute inset-0 border-0 bg-black/78 backdrop-blur-md"
 				aria-label="Close image viewer"
 				onClick={onClose}
 			/>
 			<div
-				className={`relative z-10 flex ${LIGHTBOX_CONTAINER_MAX_HEIGHT_CLASS} w-full ${LIGHTBOX_CONTAINER_MAX_WIDTH_CLASS} items-center justify-center`}
+				className={`lightbox-magnify pointer-events-none relative z-10 flex ${LIGHTBOX_CONTAINER_MAX_HEIGHT_CLASS} w-full ${LIGHTBOX_CONTAINER_MAX_WIDTH_CLASS} items-center justify-center`}
 			>
 				{useAspectRatioFrame ? (
-					<LightboxImageFrame key={activePhoto.id} photo={activePhoto} />
-				) : (
-					<Image
+					<LightboxImageFrame
 						key={activePhoto.id}
-						src={activePhoto.src}
-						alt={activePhoto.alt}
-						width={activePhoto.width}
-						height={activePhoto.height}
-						unoptimized
-						loading="eager"
-						fetchPriority="high"
-						className={`h-auto ${LIGHTBOX_IMAGE_MAX_HEIGHT_CLASS} w-auto max-w-full rounded-xl border border-white/10 object-contain`}
+						photo={activePhoto}
+						onClose={onClose}
 					/>
+				) : (
+					<button
+						type="button"
+						key={activePhoto.id}
+						onClick={onClose}
+						aria-label="Close image viewer"
+						className="pointer-events-auto relative inline-flex max-w-full cursor-zoom-out border-0 bg-transparent p-0"
+					>
+						<Image
+							src={activePhoto.src}
+							alt={activePhoto.alt}
+							width={activePhoto.width}
+							height={activePhoto.height}
+							unoptimized
+							loading="eager"
+							fetchPriority="high"
+							className={`h-auto ${LIGHTBOX_IMAGE_MAX_HEIGHT_CLASS} w-auto max-w-full rounded-xl border border-white/10 object-contain`}
+						/>
+					</button>
 				)}
 				{canNavigate ? (
 					<>
@@ -192,23 +231,27 @@ export function PhotoLightbox({
 					ariaLabel="Close image viewer"
 					icon={<X className="size-5" />}
 				/>
-				<div className="absolute bottom-2 flex max-w-[calc(100%-1rem)] flex-wrap items-center gap-2 rounded-xl border border-white/10 bg-black/60 px-3 py-2">
-					<p className="text-xs text-neutral-200">
-						{(activeIndex ?? 0) + 1} / {photos.length}
-					</p>
-					{showDetails ? (
-						<>
-							<p className="text-xs text-neutral-300">
-								{activePhoto.locationName} · {activePhoto.shotAtLabel}
+				{showFooter ? (
+					<div className="pointer-events-auto absolute bottom-2 flex max-w-[calc(100%-1rem)] flex-wrap items-center gap-2 rounded-xl border border-white/10 bg-black/60 px-3 py-2">
+						{showCount ? (
+							<p className="text-xs text-neutral-200">
+								{(activeIndex ?? 0) + 1} / {photos.length}
 							</p>
-							<PhotoExifPanel
-								iso={activePhoto.iso}
-								aperture={activePhoto.aperture}
-								shutterSpeed={activePhoto.shutterSpeed}
-							/>
-						</>
-					) : null}
-				</div>
+						) : null}
+						{showDetails ? (
+							<>
+								<p className="text-xs text-neutral-300">
+									{activePhoto.locationName} · {activePhoto.shotAtLabel}
+								</p>
+								<PhotoExifPanel
+									iso={activePhoto.iso}
+									aperture={activePhoto.aperture}
+									shutterSpeed={activePhoto.shutterSpeed}
+								/>
+							</>
+						) : null}
+					</div>
+				) : null}
 			</div>
 		</div>,
 		document.body,

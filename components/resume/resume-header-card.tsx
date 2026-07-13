@@ -23,10 +23,7 @@ export function ResumeHeaderCard({
 							<p className="font-mono text-[10px] uppercase text-neutral-500">
 								{header.label}
 							</p>
-							<span
-								className="size-1.5 rounded-full bg-emerald-500"
-								aria-hidden
-							/>
+							<span className="size-1.5 rounded-full bg-accent" aria-hidden />
 							<p className="text-xs text-neutral-400">{header.workStatus}</p>
 						</div>
 						<div className="space-y-2">

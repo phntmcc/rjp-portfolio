@@ -55,11 +55,11 @@ export function HeroCard({ className }: { className?: string }) {
 					>
 						<span className="relative inline-flex size-2 shrink-0 items-center justify-center">
 							<span
-								className="motion-safe:absolute motion-safe:inset-0 motion-safe:animate-ping motion-safe:rounded-full motion-safe:bg-emerald-400/45"
+								className="motion-safe:absolute motion-safe:inset-0 motion-safe:animate-ping motion-safe:rounded-full motion-safe:bg-accent/45"
 								aria-hidden
 							/>
 							<span
-								className="relative z-10 size-2 rounded-full bg-emerald-500"
+								className="relative z-10 size-2 rounded-full bg-accent"
 								aria-hidden
 							/>
 						</span>

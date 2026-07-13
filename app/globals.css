@@ -3,11 +3,14 @@
 :root {
 	--background: #0a0a0a;
 	--foreground: #ededed;
+	--accent: #10b981;
+	--ease-out-quint: cubic-bezier(0.22, 1, 0.36, 1);
 }
 
 @theme inline {
 	--color-background: var(--background);
 	--color-foreground: var(--foreground);
+	--color-accent: var(--accent);
 	--font-sans: var(--font-geist-sans), system-ui, sans-serif;
 	--font-mono: var(--font-geist-mono), ui-monospace, monospace;
 	--font-serif: var(--font-playfair), ui-serif, Georgia, serif;
@@ -126,6 +129,74 @@ html {
 	animation: route-content-in 0.72s cubic-bezier(0.2, 1, 0.32, 1) both;
 }
 
+.route-stage--covering .route-content--forward {
+	animation: route-content-forward-out 0.46s cubic-bezier(0.32, 0, 0.7, 0.12)
+		both;
+}
+
+.route-stage--revealing .route-content--forward {
+	animation: route-content-forward-in 0.72s cubic-bezier(0.2, 1, 0.32, 1) both;
+}
+
+.route-stage--covering .route-content--backward {
+	animation: route-content-backward-out 0.46s cubic-bezier(0.32, 0, 0.7, 0.12)
+		both;
+}
+
+.route-stage--revealing .route-content--backward {
+	animation: route-content-backward-in 0.72s cubic-bezier(0.2, 1, 0.32, 1) both;
+}
+
+.case-study-mount {
+	animation: case-study-rise 0.9s var(--ease-out-quint) both;
+}
+
+.case-study-mount-line {
+	animation: case-study-line 0.9s var(--ease-out-quint) both;
+}
+
+[data-rv-pending] {
+	opacity: 0;
+	transform: translateY(18px);
+}
+
+.ambient-blob-a {
+	animation: ambient-drift-a 52s ease-in-out infinite alternate;
+}
+
+.ambient-blob-b {
+	animation: ambient-drift-b 64s ease-in-out infinite alternate;
+}
+
+.animate-ping-dot {
+	animation: ping-dot 1.8s cubic-bezier(0, 0, 0.2, 1) infinite;
+}
+
+.cs-nav-badge {
+	transition:
+		transform 0.7s var(--ease-out-quint),
+		opacity 0.55s var(--ease-out-quint),
+		filter 0.55s var(--ease-out-quint);
+	will-change: transform, opacity;
+}
+
+.cs-nav-badge--hidden {
+	transform: translateY(2.75rem) scale(0.98);
+	opacity: 0;
+	filter: blur(3px);
+}
+
+.cs-nav-badge--visible {
+	transform: translateY(0) scale(1);
+	opacity: 1;
+	filter: blur(0);
+}
+
+.route-stage--covering .case-study-page #heroSticky,
+.route-stage--covering .case-study-page #railSticky {
+	position: static;
+}
+
 .resume-page .animate-bento-in {
 	animation-duration: 0.68s;
 }
@@ -197,13 +268,165 @@ html {
 	}
 }
 
+@keyframes route-content-forward-out {
+	from {
+		opacity: 1;
+		transform: translateY(0);
+	}
+	to {
+		opacity: 0;
+		transform: translateY(-26vh);
+	}
+}
+
+@keyframes route-content-forward-in {
+	from {
+		opacity: 0.9;
+		transform: translateY(26vh);
+	}
+	to {
+		opacity: 1;
+		transform: translateY(0);
+	}
+}
+
+@keyframes route-content-backward-out {
+	from {
+		opacity: 1;
+		transform: translateY(0);
+	}
+	to {
+		opacity: 0;
+		transform: translateY(26vh);
+	}
+}
+
+@keyframes route-content-backward-in {
+	from {
+		opacity: 0.9;
+		transform: translateY(-26vh);
+	}
+	to {
+		opacity: 1;
+		transform: translateY(0);
+	}
+}
+
+@keyframes case-study-rise {
+	from {
+		opacity: 0;
+		transform: translateY(16px);
+	}
+	to {
+		opacity: 1;
+		transform: translateY(0);
+	}
+}
+
+@keyframes case-study-line {
+	from {
+		opacity: 0;
+		transform: translateY(105%);
+	}
+	to {
+		opacity: 1;
+		transform: translateY(0);
+	}
+}
+
+@keyframes ambient-drift-a {
+	from {
+		transform: translate(0, 0) scale(1);
+	}
+	to {
+		transform: translate(5vw, 7vw) scale(1.12);
+	}
+}
+
+@keyframes ambient-drift-b {
+	from {
+		transform: translate(0, 0) scale(1);
+	}
+	to {
+		transform: translate(-6vw, -5vw) scale(1.08);
+	}
+}
+
+@keyframes ping-dot {
+	75%,
+	100% {
+		transform: scale(2.4);
+		opacity: 0;
+	}
+}
+
+@keyframes lightbox-backdrop-in {
+	from {
+		opacity: 0;
+	}
+	to {
+		opacity: 1;
+	}
+}
+
+@keyframes lightbox-magnify {
+	from {
+		opacity: 0;
+		transform: scale(0.92);
+	}
+	to {
+		opacity: 1;
+		transform: scale(1);
+	}
+}
+
+.lightbox-backdrop-in {
+	animation: lightbox-backdrop-in 0.28s ease-out both;
+}
+
+.lightbox-magnify {
+	animation: lightbox-magnify 0.38s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
 @media (prefers-reduced-motion: reduce) {
 	.dock-magnify {
 		transition: none;
 	}
 
-	.route-stage--covering .route-content,
-	.route-stage--revealing .route-content {
+	.lightbox-backdrop-in,
+	.lightbox-magnify {
 		animation: none;
+	}
+
+	.route-stage--covering .route-content,
+	.route-stage--revealing .route-content,
+	.route-stage--covering .route-content--forward,
+	.route-stage--revealing .route-content--forward,
+	.route-stage--covering .route-content--backward,
+	.route-stage--revealing .route-content--backward {
+		animation: none;
+	}
+
+	.case-study-mount,
+	.case-study-mount-line,
+	[data-rv-pending],
+	.ambient-blob-a,
+	.ambient-blob-b,
+	.animate-ping-dot {
+		animation: none;
+		transition: none;
+		opacity: 1;
+		transform: none;
+	}
+
+	.cs-nav-badge {
+		transition: none;
+	}
+
+	.cs-nav-badge--hidden,
+	.cs-nav-badge--visible {
+		transform: none;
+		opacity: 1;
+		filter: none;
 	}
 }

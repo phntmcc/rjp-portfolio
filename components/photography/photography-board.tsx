@@ -158,6 +158,8 @@ export function PhotographyBoard({
 		iso: photo.iso,
 		aperture: photo.aperture,
 		shutterSpeed: photo.shutterSpeed,
+		thumbUrl: photo.thumbUrl,
+		blurDataUrl: photo.blurDataUrl,
 	}));
 
 	const close = useCallback(() => setActiveIndex(null), []);

@@ -8,7 +8,14 @@ import {
 	navigateWithTransition,
 	PAGE_NAVIGATE_EVENT,
 	type PageNavigateDetail,
+	ROUTE_SETTLED_EVENT,
 } from "@/components/navigation/transition-routing";
+
+const ROUTE_IN_ANIMATIONS = new Set([
+	"route-content-in",
+	"route-content-forward-in",
+	"route-content-backward-in",
+]);
 
 type PageTransitionShellProps = {
 	children: ReactNode;
@@ -19,11 +26,15 @@ type TransitionPhase = "idle" | "covering" | "revealing";
 const ROUTE_EXIT_FALLBACK_MS = 540;
 const ROUTE_ENTER_MS = 720;
 
+type RouteDirection = "forward" | "backward" | "default";
+
 export function PageTransitionShell({ children }: PageTransitionShellProps) {
 	const pathname = usePathname();
 	const searchParams = useSearchParams();
 	const router = useRouter();
 	const [phase, setPhase] = useState<TransitionPhase>("idle");
+	const [routeDirection, setRouteDirection] =
+		useState<RouteDirection>("default");
 	const isTransitioningRef = useRef(false);
 	const queuedHrefRef = useRef<string | null>(null);
 	const pendingNavigateRef = useRef<(() => void) | null>(null);
@@ -83,7 +94,7 @@ export function PageTransitionShell({ children }: PageTransitionShellProps) {
 
 		const handleTransitionNavigate = (event: Event) => {
 			const navigationEvent = event as CustomEvent<PageNavigateDetail>;
-			const { href, navigate } = navigationEvent.detail;
+			const { href, navigate, direction } = navigationEvent.detail;
 			const target = new URL(href, window.location.href);
 			const current = new URL(window.location.href);
 			const isSameLocation =
@@ -102,6 +113,7 @@ export function PageTransitionShell({ children }: PageTransitionShellProps) {
 
 			isTransitioningRef.current = true;
 			pendingNavigateRef.current = navigate;
+			setRouteDirection(direction ?? "default");
 			setPhase("covering");
 			clearExitFallbackTimer();
 			exitFallbackTimerRef.current = window.setTimeout(() => {
@@ -123,7 +135,13 @@ export function PageTransitionShell({ children }: PageTransitionShellProps) {
 		if (!content) return;
 
 		const onAnimationEnd = (event: AnimationEvent) => {
-			if (event.animationName !== "route-content-out") return;
+			if (
+				event.animationName !== "route-content-out" &&
+				event.animationName !== "route-content-forward-out" &&
+				event.animationName !== "route-content-backward-out"
+			) {
+				return;
+			}
 			flushPendingNavigate();
 		};
 
@@ -139,14 +157,16 @@ export function PageTransitionShell({ children }: PageTransitionShellProps) {
 		}
 
 		const currentRouteKey = routeKey;
+		let settled = false;
 
-		const revealTimer = window.setTimeout(() => {
-			setPhase("revealing");
-		}, 0);
+		const settleRoute = () => {
+			if (settled) return;
+			settled = true;
 
-		const settleTimer = window.setTimeout(() => {
 			setPhase("idle");
+			setRouteDirection("default");
 			isTransitioningRef.current = false;
+			window.dispatchEvent(new CustomEvent(ROUTE_SETTLED_EVENT));
 
 			const queuedHref = queuedHrefRef.current;
 			queuedHrefRef.current = null;
@@ -163,11 +183,27 @@ export function PageTransitionShell({ children }: PageTransitionShellProps) {
 				if (isSameLocation) return;
 				navigateWithTransition(router, queuedHref);
 			}
-		}, ROUTE_ENTER_MS);
+		};
+
+		const revealTimer = window.setTimeout(() => {
+			setPhase("revealing");
+		}, 0);
+
+		const settleTimer = window.setTimeout(settleRoute, ROUTE_ENTER_MS + 80);
+
+		const content = routeContentRef.current;
+		const onEnterAnimationEnd = (event: AnimationEvent) => {
+			if (!ROUTE_IN_ANIMATIONS.has(event.animationName)) return;
+			if (event.target !== content) return;
+			settleRoute();
+		};
+
+		content?.addEventListener("animationend", onEnterAnimationEnd);
 
 		return () => {
 			window.clearTimeout(revealTimer);
 			window.clearTimeout(settleTimer);
+			content?.removeEventListener("animationend", onEnterAnimationEnd);
 		};
 	}, [routeKey, router]);
 
@@ -179,8 +215,17 @@ export function PageTransitionShell({ children }: PageTransitionShellProps) {
 
 	return (
 		<div className={`route-stage route-stage--${phase}`}>
-			<div ref={routeContentRef} className="route-content">
-				{children}
+			<div
+				ref={routeContentRef}
+				className={`route-content ${
+					routeDirection === "forward"
+						? "route-content--forward"
+						: routeDirection === "backward"
+							? "route-content--backward"
+							: ""
+				}`}
+			>
+				<div key={routeKey}>{children}</div>
 			</div>
 		</div>
 	);

@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
+import { AmbientBackground } from "@/components/case-study/ambient-background";
 import { PageHeader } from "@/components/layout/page-header";
-import { ProjectsGrid } from "@/components/projects/projects-grid";
+import { ProjectShowcase } from "@/components/projects/project-showcase";
 import { projectsContent } from "@/content/projects";
 import { PAGE_BOTTOM_PADDING_CLASS } from "@/lib/layout-constants";
 
@@ -35,9 +36,20 @@ export default function ProjectsPage() {
 	const { headline, subhead } = projectsContent;
 
 	return (
-		<main className={`projects-page ${PAGE_BOTTOM_PADDING_CLASS}`}>
-			<PageHeader title={headline} description={subhead} />
-			<ProjectsGrid />
-		</main>
+		<>
+			<AmbientBackground />
+			<main
+				className={`projects-page relative z-1 ${PAGE_BOTTOM_PADDING_CLASS}`}
+			>
+				<PageHeader
+					eyebrow="Selected work"
+					title={headline}
+					description={subhead}
+				/>
+				<div className="mt-6 lg:mt-10">
+					<ProjectShowcase />
+				</div>
+			</main>
+		</>
 	);
 }

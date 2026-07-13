@@ -2,6 +2,7 @@ import { Analytics } from "@vercel/analytics/next";
 import type { Metadata } from "next";
 import { Geist, Geist_Mono, Playfair_Display } from "next/font/google";
 import { type ReactNode, Suspense } from "react";
+import { CaseStudyTransitionBadge } from "@/components/case-study/case-study-transition-badge";
 import { Dock } from "@/components/dock/dock";
 import { CommandMenuProvider } from "@/components/layout/command-menu";
 import { PageTransitionShell } from "@/components/layout/page-transition-shell";
@@ -77,9 +78,9 @@ export default function RootLayout({ children }: { children: ReactNode }) {
 				<CommandMenuProvider>
 					<TooltipProvider delayDuration={80} skipDelayDuration={120}>
 						<div
-							className={`mx-auto flex w-full ${SITE_CONTAINER_MAX_WIDTH_CLASS} flex-1 flex-col px-6 pb-12 pt-6 sm:px-12 sm:pt-8`}
+							className={`mx-auto flex w-full ${SITE_CONTAINER_MAX_WIDTH_CLASS} flex-1 flex-col px-6 pb-12 sm:px-12`}
 						>
-							<div className="sticky top-0 z-30 pb-6 pt-2">
+							<div className="sticky top-0 z-30 pb-6 pt-6 sm:pt-8">
 								<SiteHeader />
 							</div>
 							<Suspense fallback={children}>
@@ -87,6 +88,7 @@ export default function RootLayout({ children }: { children: ReactNode }) {
 							</Suspense>
 						</div>
 						<Dock />
+						<CaseStudyTransitionBadge />
 						<Analytics />
 					</TooltipProvider>
 				</CommandMenuProvider>

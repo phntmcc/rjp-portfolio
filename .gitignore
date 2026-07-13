@@ -43,3 +43,6 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# case study authoring notes (local only)
+content/case-studies/AUTHORING.md

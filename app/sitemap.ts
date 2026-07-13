@@ -1,5 +1,5 @@
 import type { MetadataRoute } from "next";
-import { projectsContent } from "@/content/projects";
+import { getAllCaseStudySlugs } from "@/content/case-studies";
 
 function getSiteUrl() {
 	const fallback = "https://robbiejpatterson.com";
@@ -37,14 +37,14 @@ export default function sitemap(): MetadataRoute.Sitemap {
 		},
 	];
 
-	const internalProjectRoutes: MetadataRoute.Sitemap = projectsContent.items
-		.filter((item) => item.linkType === "internal")
-		.map((item) => ({
-			url: `${siteUrl}${item.href}`,
+	const caseStudyRoutes: MetadataRoute.Sitemap = getAllCaseStudySlugs().map(
+		(slug) => ({
+			url: `${siteUrl}/projects/${slug}`,
 			lastModified,
 			changeFrequency: "monthly",
 			priority: 0.8,
-		}));
+		}),
+	);
 
-	return [...staticRoutes, ...internalProjectRoutes];
+	return [...staticRoutes, ...caseStudyRoutes];
 }

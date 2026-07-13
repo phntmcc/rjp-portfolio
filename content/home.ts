@@ -1,8 +1,8 @@
 export const site = {
 	name: "Robbie Patterson",
-	title: "Robbie Patterson — Design Engineer",
+	title: "Robbie Patterson — UX/UI Designer & Frontend Developer",
 	description:
-		"I design and build digital products, then chase stories through a camera lens.",
+		"UX/UI designer and frontend developer. I turn Figma concepts into shipped, responsive code, then chase stories through a camera lens.",
 } as const;
 
 /** Single source of truth for profile contact links (email + social). */
@@ -17,32 +17,54 @@ export const contactMailto = `mailto:${contact.email}` as const;
 export const homeContent = {
 	hero: {
 		badge: "OPEN TO WORK",
-		headlineLead: "I Build Systems & ",
-		headlineAccent: "capture moments.",
+		headlineLead: "I design interfaces, ",
+		headlineAccent: "then capture moments.",
 		subhead:
-			"I turn ideas into clean, fast products with a builder mindset, then switch gears to capture the world one frame at a time.",
-	},
-	latestProject: {
-		label: "LATEST PROJECT",
-		title: "ScopeGuard",
-		description:
-			"Built for crews in the field: record scope updates by voice and generate clear work-order docs in minutes, not hours.",
-		imageSrc: "/images/scopeguard-mark.svg",
-		href: "/projects/scopeguard",
+			"UX/UI designer and frontend developer with 7+ years turning Figma concepts into shipped, responsive code. Off the clock, I'm behind a camera.",
 	},
 	toolkit: {
 		label: "CURRENT TOOLKIT",
 		items: [
 			{
+				id: "figma",
+				label: "Figma",
+				src: "/icons/brands/figma-icon.svg",
+				experienceStartYear: 2020,
+			},
+			{
+				id: "illustrator",
+				label: "Adobe Illustrator",
+				src: "/icons/brands/illustrator-icon.svg",
+				experienceStartYear: 2015,
+			},
+			{
+				id: "photoshop",
+				label: "Adobe Photoshop",
+				src: "/icons/brands/photoshop-icon.svg",
+				experienceStartYear: 2015,
+			},
+			{
+				id: "html",
+				label: "HTML",
+				src: "/icons/brands/html-icon.svg",
+				experienceStartYear: 2018,
+			},
+			{
+				id: "css",
+				label: "CSS",
+				src: "/icons/brands/css-icon.svg",
+				experienceStartYear: 2018,
+			},
+			{
+				id: "javascript",
+				label: "JavaScript",
+				src: "/icons/brands/javascript-icon.svg",
+				experienceStartYear: 2019,
+			},
+			{
 				id: "react",
 				label: "React",
 				src: "/icons/brands/react-icon.svg",
-				experienceStartYear: 2025,
-			},
-			{
-				id: "typescript",
-				label: "TypeScript",
-				src: "/icons/brands/typescript-icon.svg",
 				experienceStartYear: 2025,
 			},
 			{
@@ -52,51 +74,15 @@ export const homeContent = {
 				experienceStartYear: 2025,
 			},
 			{
+				id: "typescript",
+				label: "TypeScript",
+				src: "/icons/brands/typescript-icon.svg",
+				experienceStartYear: 2025,
+			},
+			{
 				id: "tailwind",
 				label: "Tailwind CSS",
 				src: "/icons/brands/tailwind-icon.svg",
-				experienceStartYear: 2024,
-			},
-			{
-				id: "nodejs",
-				label: "Node.js",
-				src: "/icons/brands/nodejs-icon.svg",
-				experienceStartYear: 2024,
-			},
-			{
-				id: "python",
-				label: "Python",
-				src: "/icons/brands/python-icon.svg",
-				experienceStartYear: 2022,
-			},
-			{
-				id: "django",
-				label: "Django",
-				src: "/icons/brands/django-icon.svg",
-				experienceStartYear: 2022,
-			},
-			{
-				id: "figma",
-				label: "Figma",
-				src: "/icons/brands/figma-icon.svg",
-				experienceStartYear: 2020,
-			},
-			{
-				id: "cursor",
-				label: "Cursor",
-				src: "/icons/brands/cursor-icon.svg",
-				experienceStartYear: 2024,
-			},
-			{
-				id: "anthropic",
-				label: "Claude",
-				src: "/icons/brands/claude-icon.svg",
-				experienceStartYear: 2024,
-			},
-			{
-				id: "gcp",
-				label: "Google Cloud",
-				src: "/icons/brands/gcp-icon.svg",
 				experienceStartYear: 2024,
 			},
 			{
@@ -104,6 +90,12 @@ export const homeContent = {
 				label: "Webflow",
 				src: "/icons/brands/webflow-icon.svg",
 				experienceStartYear: 2021,
+			},
+			{
+				id: "git",
+				label: "Git",
+				src: "/icons/brands/git-icon.svg",
+				experienceStartYear: 2020,
 			},
 		] as const,
 	},

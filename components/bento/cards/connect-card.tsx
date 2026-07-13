@@ -36,7 +36,7 @@ export function ConnectCard({ className, delay = 0.18 }: ConnectCardProps) {
 				<div className="flex items-center justify-between">
 					<span className={BENTO_LABEL_CLASS}>{connect.label}</span>
 					<span
-						className="size-2 shrink-0 rounded-full bg-emerald-500"
+						className="size-2 shrink-0 rounded-full bg-accent"
 						aria-hidden
 					/>
 				</div>
