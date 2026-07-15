@@ -61,6 +61,17 @@ html {
 	}
 }
 
+@keyframes hero-copy-in {
+	from {
+		opacity: 0;
+		transform: translateY(8px);
+	}
+	to {
+		opacity: 1;
+		transform: translateY(0);
+	}
+}
+
 @media (prefers-reduced-motion: reduce) {
 	.animate-bento-in {
 		animation: none;
@@ -76,6 +87,12 @@ html {
 	}
 
 	.animate-page-header {
+		animation: none;
+		opacity: 1;
+		transform: none;
+	}
+
+	.animate-hero-copy {
 		animation: none;
 		opacity: 1;
 		transform: none;
@@ -109,6 +126,11 @@ html {
 .animate-resume-in {
 	animation: resume-in 0.62s cubic-bezier(0.22, 1, 0.36, 1) both;
 	animation-delay: var(--resume-delay, 0s);
+}
+
+.animate-hero-copy {
+	animation: hero-copy-in 0.7s cubic-bezier(0.22, 1, 0.36, 1) both;
+	animation-delay: var(--hero-delay, 0s);
 }
 
 .route-stage {
