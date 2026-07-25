@@ -20,7 +20,7 @@ export const resumeContent = {
 		photoSrc: "/images/portrait.jpg",
 		photoAlt: "Robbie Patterson profile photo",
 		summary:
-			"UX/UI designer and frontend developer with 7+ years shipping production interfaces, from Figma concept to responsive code. Strong on visual craft, typography, and clean HTML, CSS, and JavaScript. Delivered ~60% average conversion lift across freelance clients and directed a team of three developers through full delivery cycles.",
+			"I ship production interfaces from Figma concept to responsive code. Strong on visual craft, typography, and clean HTML, CSS, and JavaScript. Delivered ~60% average conversion lift across freelance clients and directed a team of three developers through full delivery cycles.",
 		actions: [
 			{ id: "email", label: "Email", href: contactMailto },
 			{
