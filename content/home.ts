@@ -2,7 +2,7 @@ export const site = {
 	name: "Robbie Patterson",
 	title: "Robbie Patterson — UX/UI Designer & Frontend Developer",
 	description:
-		"UX/UI designer who ships the frontend. 7+ years from Figma into production. Open to work.",
+		"UX/UI designer who ships the frontend. From Figma concepts to production code. Open to work.",
 } as const;
 
 /** Single source of truth for profile contact links (email + social). */
@@ -21,7 +21,7 @@ export const homeContent = {
 		headlineEmphasis: "that ship.",
 		headlineAccent: "Off the clock, behind a camera.",
 		subhead:
-			"UX/UI designer with 7+ years in the chair. I turn Figma concepts into shipped, responsive code, and I write the frontend myself.",
+			"I turn Figma concepts into shipped, responsive code, and I write the frontend myself.",
 		ctaLabel: "View selected work",
 		ctaHref: "/projects",
 	},
