@@ -1,20 +1,24 @@
 import { randomUUID } from "node:crypto";
 import exifr from "exifr";
 import { NextResponse } from "next/server";
-import sharp from "sharp";
+import { MAX_UPLOAD_BYTES } from "@/lib/photography-constants";
 import {
-	DISPLAY_MAX_PX,
-	MAX_UPLOAD_BYTES,
-	THUMB_MAX_PX,
-} from "@/lib/photography-constants";
+	renderAvifLadder,
+	renderBlurDataUrl,
+	renderDisplayJpeg,
+	renderThumbJpeg,
+	uploadAvifLadder,
+	uploadPhotoObject,
+} from "@/lib/photography-variants";
 import { isAdminEmailAllowed } from "@/lib/supabase/admin-access";
-import { getPhotosBucketName } from "@/lib/supabase/env";
 import {
 	createSupabasePublicServerClient,
 	createSupabaseServiceServerClient,
 } from "@/lib/supabase/server";
 
 export const runtime = "nodejs";
+// Six AVIF encodes off a 2400px source run well past the default timeout.
+export const maxDuration = 300;
 
 const ACCEPTED_FILE_TYPES = new Set(["image/jpeg", "image/jpg"]);
 
@@ -149,64 +153,37 @@ export async function POST(request: Request) {
 		const sourceBuffer = Buffer.from(await file.arrayBuffer());
 		const exifData = await exifr.parse(sourceBuffer);
 
-		const displayResult = await sharp(sourceBuffer)
-			.rotate()
-			.resize(DISPLAY_MAX_PX, DISPLAY_MAX_PX, {
-				fit: "inside",
-				withoutEnlargement: true,
-			})
-			.jpeg({ quality: 82, mozjpeg: true })
-			.toBuffer({ resolveWithObject: true });
+		const displayResult = await renderDisplayJpeg(sourceBuffer);
+		const thumbBuffer = await renderThumbJpeg(displayResult.data);
+		const blurDataUrl = await renderBlurDataUrl(displayResult.data);
+		const avifVariants = await renderAvifLadder(
+			sourceBuffer,
+			displayResult.info.width,
+			displayResult.info.height,
+		);
 
-		const thumbBuffer = await sharp(displayResult.data)
-			.resize(THUMB_MAX_PX, THUMB_MAX_PX, {
-				fit: "inside",
-				withoutEnlargement: true,
-			})
-			.jpeg({ quality: 74, mozjpeg: true })
-			.toBuffer();
-
-		const blurBuffer = await sharp(displayResult.data)
-			.resize(24, 24, {
-				fit: "inside",
-				withoutEnlargement: false,
-			})
-			.jpeg({ quality: 40, mozjpeg: true })
-			.toBuffer();
-
-		const blurDataUrl = `data:image/jpeg;base64,${blurBuffer.toString("base64")}`;
 		const photoId = randomUUID();
-		const bucket = getPhotosBucketName();
 		const displayPath = `display/${photoId}.jpg`;
 		const thumbPath = `thumb/${photoId}.jpg`;
 
 		const serviceClient = createSupabaseServiceServerClient();
-		const displayUpload = await serviceClient.storage
-			.from(bucket)
-			.upload(displayPath, displayResult.data, {
-				contentType: "image/jpeg",
-				upsert: false,
-			});
-		if (displayUpload.error) {
-			throw new Error(displayUpload.error.message);
-		}
-
-		const thumbUpload = await serviceClient.storage
-			.from(bucket)
-			.upload(thumbPath, thumbBuffer, {
-				contentType: "image/jpeg",
-				upsert: false,
-			});
-		if (thumbUpload.error) {
-			throw new Error(thumbUpload.error.message);
-		}
-
-		const { data: displayPublic } = serviceClient.storage
-			.from(bucket)
-			.getPublicUrl(displayPath);
-		const { data: thumbPublic } = serviceClient.storage
-			.from(bucket)
-			.getPublicUrl(thumbPath);
+		const displayUrl = await uploadPhotoObject({
+			client: serviceClient,
+			path: displayPath,
+			body: displayResult.data,
+			contentType: "image/jpeg",
+		});
+		const thumbUrl = await uploadPhotoObject({
+			client: serviceClient,
+			path: thumbPath,
+			body: thumbBuffer,
+			contentType: "image/jpeg",
+		});
+		const variants = await uploadAvifLadder({
+			client: serviceClient,
+			photoId,
+			variants: avifVariants,
+		});
 
 		const exifRecord = exifData ?? {};
 		const shotAt = parseShotAt(null, exifRecord.DateTimeOriginal);
@@ -249,8 +226,9 @@ export async function POST(request: Request) {
 			blur_data_url: blurDataUrl,
 			image_path: displayPath,
 			thumb_path: thumbPath,
-			display_url: displayPublic.publicUrl,
-			thumb_url: thumbPublic.publicUrl,
+			display_url: displayUrl,
+			thumb_url: thumbUrl,
+			variants,
 		});
 
 		if (insertError) {
@@ -260,8 +238,8 @@ export async function POST(request: Request) {
 		return NextResponse.json({
 			ok: true,
 			id: photoId,
-			displayUrl: displayPublic.publicUrl,
-			thumbUrl: thumbPublic.publicUrl,
+			displayUrl,
+			thumbUrl,
 		});
 	} catch (error) {
 		return NextResponse.json(

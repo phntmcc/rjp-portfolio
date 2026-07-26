@@ -59,6 +59,20 @@ export function getPhotosBucketName() {
 	return process.env.SUPABASE_PHOTOS_BUCKET ?? "photos";
 }
 
+/**
+ * Origin serving photo objects, for connection hints. Returns null rather than
+ * throwing so a missing env var cannot break rendering of non-photo pages.
+ */
+export function getSupabaseOrigin() {
+	const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
+	if (!url) return null;
+	try {
+		return new URL(url).origin;
+	} catch {
+		return null;
+	}
+}
+
 export function getServerAdminEmailAllowlist() {
 	const fromList = parseAdminEmailList(process.env.SUPABASE_ADMIN_EMAILS ?? "");
 	if (fromList.length > 0) return fromList;

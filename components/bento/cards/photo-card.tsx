@@ -1,6 +1,5 @@
 "use client";
 
-import Image from "next/image";
 import { useCallback, useMemo, useState } from "react";
 import { BentoCard } from "@/components/bento/bento-card";
 import { PhotoExpandIcon } from "@/components/icons/photo-expand";
@@ -9,7 +8,12 @@ import {
 	type LightboxPhoto,
 	PhotoLightbox,
 } from "@/components/photography/photo-lightbox";
+import { PhotoPicture } from "@/components/photography/photo-picture";
 import type { HomePhotographyPhoto } from "@/lib/photography";
+import {
+	HOME_CARD_PICTURE_SOURCES,
+	HOME_CARD_SIZES,
+} from "@/lib/photography-constants";
 
 type PhotoCardProps = {
 	className?: string;
@@ -37,6 +41,9 @@ export function PhotoCard({ className, delay = 0.12, photo }: PhotoCardProps) {
 				iso: photo.iso,
 				aperture: photo.aperture,
 				shutterSpeed: photo.shutterSpeed,
+				thumbUrl: photo.imageSrc,
+				blurDataUrl: photo.blurDataUrl,
+				variants: photo.variants,
 			},
 		];
 	}, [photo]);
@@ -61,13 +68,19 @@ export function PhotoCard({ className, delay = 0.12, photo }: PhotoCardProps) {
 
 				<div className="pointer-events-none absolute inset-0 z-6">
 					{photo ? (
-						<Image
+						<PhotoPicture
 							src={photo.imageSrc}
 							alt=""
-							fill
-							className="object-cover"
-							sizes="(max-width: 1024px) 100vw, 328px"
+							width={photo.width}
+							height={photo.height}
+							sizes={HOME_CARD_SIZES}
+							sources={HOME_CARD_PICTURE_SOURCES}
+							variantRole="grid"
+							variants={photo.variants}
+							blurDataUrl={photo.blurDataUrl}
 							priority
+							layout="fill"
+							className="object-cover"
 						/>
 					) : (
 						<div className="absolute inset-0 bg-linear-to-b from-neutral-900 to-neutral-950" />

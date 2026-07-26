@@ -46,6 +46,14 @@ export function PageTransitionShell({ children }: PageTransitionShellProps) {
 		return query ? `${pathname}?${query}` : pathname;
 	})();
 
+	/**
+	 * Only the pathname may force a remount. In-page controls own query state —
+	 * the photography location filter mirrors itself into the URL with
+	 * `replaceState` — and keying the subtree on the query string would tear that
+	 * component down mid-interaction and discard everything it holds.
+	 */
+	const contentKey = pathname;
+
 	const clearExitFallbackTimer = useCallback(() => {
 		if (exitFallbackTimerRef.current !== null) {
 			window.clearTimeout(exitFallbackTimerRef.current);
@@ -225,7 +233,7 @@ export function PageTransitionShell({ children }: PageTransitionShellProps) {
 							: ""
 				}`}
 			>
-				<div key={routeKey}>{children}</div>
+				<div key={contentKey}>{children}</div>
 			</div>
 		</div>
 	);
