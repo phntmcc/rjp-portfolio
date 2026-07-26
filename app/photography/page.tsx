@@ -55,7 +55,11 @@ export default async function PhotographyPage({
 				title={photographyContent.headline}
 				description={photographyContent.subhead}
 			/>
+			{/* Remounts only when the server's notion of the location changes, so a
+			    real navigation resets the board while the in-page filter (which
+			    mirrors itself into the URL client-side) keeps its state. */}
 			<PhotographyBoard
+				key={activeLocation ?? "all"}
 				initialPhotos={initialPage.photos}
 				initialHasMore={initialPage.hasMore}
 				locations={locations}

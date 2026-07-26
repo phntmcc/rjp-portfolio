@@ -1,16 +1,24 @@
 "use client";
 
 import { ChevronLeft, ChevronRight, X } from "lucide-react";
-import Image from "next/image";
-import { type ReactNode, useEffect, useMemo, useState } from "react";
+import {
+	type ReactNode,
+	useCallback,
+	useEffect,
+	useMemo,
+	useState,
+} from "react";
 import { createPortal } from "react-dom";
 import { PhotoExifPanel } from "@/components/photography/photo-exif-panel";
+import { PhotoPicture } from "@/components/photography/photo-picture";
 import {
 	LIGHTBOX_CONTAINER_MAX_HEIGHT_CLASS,
 	LIGHTBOX_CONTAINER_MAX_WIDTH_CLASS,
 	LIGHTBOX_IMAGE_MAX_HEIGHT_CLASS,
 	LIGHTBOX_LAYER_Z_INDEX_CLASS,
 } from "@/lib/layout-constants";
+import { buildAvifSrcSet, type PhotoVariants } from "@/lib/photo-variants";
+import { GRID_VARIANT_WIDTHS } from "@/lib/photography-constants";
 
 export type LightboxPhoto = {
 	id: string;
@@ -25,7 +33,45 @@ export type LightboxPhoto = {
 	shutterSpeed?: string | null;
 	thumbUrl?: string | null;
 	blurDataUrl?: string | null;
+	variants?: PhotoVariants | null;
 };
+
+/**
+ * Pinned to the narrowest rung at every DPR. Without the cap a 2x or 3x device
+ * selects a wider one, which defeats the point: this layer exists to reuse the
+ * bytes the grid already cached, not to start a fresh download.
+ */
+const PREVIEW_PICTURE_SOURCES = [
+	{
+		sizes: `${GRID_VARIANT_WIDTHS[0]}px`,
+		maxWidth: GRID_VARIANT_WIDTHS[0],
+	},
+] as const;
+
+/**
+ * The frame is capped at both 95vh and 95vw, so landscape shots are
+ * height-constrained. A bare `95vw` would make the browser pick a rung far
+ * wider than the image is ever painted.
+ *
+ * Paired with `aspect-ratio` this also makes the box deterministic before any
+ * bytes arrive: the derived height is `min(95vw * H/W, 95vh)`, so the 95vh cap
+ * can never bind, and on narrow screens `max-w-full` clamps the width with the
+ * ratio recomputing the height.
+ */
+function lightboxFrameWidth(photo: LightboxPhoto) {
+	return `min(95vw, calc(95vh * ${photo.width} / ${photo.height}))`;
+}
+
+/**
+ * Declares twice the painted width on purpose. Left honest, a 1x display picks
+ * the rung matched to the frame and paints it 1:1, which reads soft on a large
+ * monitor; doubling makes it reach for the next rung up instead. Doubling both
+ * terms is equivalent to doubling the result, since `min` distributes over a
+ * positive scalar. Where the ladder is already exhausted this is a no-op.
+ */
+function lightboxSizes(photo: LightboxPhoto) {
+	return `min(190vw, calc(190vh * ${photo.width} / ${photo.height}))`;
+}
 
 function LightboxImageFrame({
 	photo,
@@ -35,43 +81,59 @@ function LightboxImageFrame({
 	onClose: () => void;
 }) {
 	const [imageReady, setImageReady] = useState(false);
-	const previewSrc = photo.thumbUrl ?? photo.blurDataUrl ?? null;
-	const hasPreview = Boolean(previewSrc);
+	const previewSrc = photo.thumbUrl ?? null;
+	const handleReady = useCallback(() => setImageReady(true), []);
+	const fadeOut = imageReady ? "opacity-0" : "opacity-100";
 
 	return (
 		<button
 			type="button"
 			onClick={onClose}
 			aria-label="Close image viewer"
-			className={`pointer-events-auto relative inline-flex ${LIGHTBOX_IMAGE_MAX_HEIGHT_CLASS} max-w-full cursor-zoom-out items-center justify-center overflow-hidden rounded-xl border border-white/10 bg-black/40 p-0`}
+			className={`pointer-events-auto relative flex ${LIGHTBOX_IMAGE_MAX_HEIGHT_CLASS} max-w-full cursor-zoom-out items-center justify-center overflow-hidden rounded-xl border border-white/10 bg-black/40 p-0`}
 			style={{
 				aspectRatio: `${photo.width} / ${photo.height}`,
+				width: lightboxFrameWidth(photo),
 			}}
 		>
+			{photo.blurDataUrl ? (
+				<div
+					aria-hidden
+					className={`absolute inset-0 scale-105 bg-cover bg-center blur-sm transition-opacity duration-300 ${fadeOut}`}
+					style={{ backgroundImage: `url("${photo.blurDataUrl}")` }}
+				/>
+			) : null}
 			{previewSrc ? (
-				<Image
+				/* Kept unscaled so it lines up with the full image and nothing shifts
+				   when the two swap. */
+				<PhotoPicture
 					src={previewSrc}
 					alt=""
 					aria-hidden
-					fill
-					unoptimized
-					placeholder={photo.blurDataUrl ? "blur" : "empty"}
-					blurDataURL={photo.blurDataUrl ?? undefined}
-					className={`scale-105 object-contain blur-sm transition-opacity duration-300 ${imageReady ? "opacity-0" : "opacity-100"}`}
+					width={photo.width}
+					height={photo.height}
+					sizes={`${GRID_VARIANT_WIDTHS[0]}px`}
+					sources={PREVIEW_PICTURE_SOURCES}
+					variantRole="grid"
+					variants={photo.variants ?? null}
+					layout="fill"
+					className={`object-contain blur-xs transition-opacity duration-300 ${fadeOut}`}
 				/>
 			) : null}
-			<Image
+			<PhotoPicture
 				src={photo.src}
 				alt={photo.alt}
 				width={photo.width}
 				height={photo.height}
-				unoptimized
-				loading="eager"
-				fetchPriority="high"
-				onLoad={() => setImageReady(true)}
-				className={`h-auto ${LIGHTBOX_IMAGE_MAX_HEIGHT_CLASS} w-auto max-w-full object-contain transition-opacity duration-200 ${imageReady ? "opacity-100" : "opacity-0"}`}
+				sizes={lightboxSizes(photo)}
+				variantRole="display"
+				variants={photo.variants ?? null}
+				priority
+				layout="fill"
+				onReady={handleReady}
+				className={`object-contain transition-opacity duration-200 ${imageReady ? "opacity-100" : "opacity-0"}`}
 			/>
-			{!hasPreview && !imageReady ? (
+			{!previewSrc && !photo.blurDataUrl && !imageReady ? (
 				<div className="absolute inset-0 flex items-center justify-center bg-black/40">
 					<div className="size-8 animate-spin rounded-full border-2 border-white/20 border-t-white/80" />
 				</div>
@@ -146,21 +208,16 @@ export function PhotoLightbox({
 		};
 	}, [activeIndex, activePhoto, canNavigate, onClose, onNext, onPrevious]);
 
-	const preloadUrls = useMemo(() => {
-		if (!activePhoto || activeIndex === null) return [];
-		if (!canNavigate) return [activePhoto.src];
+	const preloadTargets = useMemo(() => {
+		if (!activePhoto || activeIndex === null || !canNavigate) return [];
 		const next = photos[(activeIndex + 1) % photos.length];
 		const previous = photos[(activeIndex - 1 + photos.length) % photos.length];
-		return [activePhoto.src, next.src, previous.src];
+		return [next, previous].filter(
+			(photo, index, list) =>
+				photo.id !== activePhoto.id &&
+				list.findIndex((item) => item.id === photo.id) === index,
+		);
 	}, [activePhoto, activeIndex, canNavigate, photos]);
-
-	useEffect(() => {
-		for (const url of preloadUrls) {
-			const image = new window.Image();
-			image.decoding = "async";
-			image.src = url;
-		}
-	}, [preloadUrls]);
 
 	if (!activePhoto || typeof document === "undefined") return null;
 
@@ -174,6 +231,23 @@ export function PhotoLightbox({
 			aria-modal="true"
 			aria-label={`${activePhoto.locationName} full-size photo`}
 		>
+			{/* `type` lets browsers without AVIF skip the hint instead of fetching
+			    bytes they cannot decode. */}
+			{preloadTargets.map((photo) => {
+				const srcSet = buildAvifSrcSet(photo.variants ?? null, "display");
+				return srcSet ? (
+					<link
+						key={photo.id}
+						rel="preload"
+						as="image"
+						type="image/avif"
+						imageSrcSet={srcSet}
+						imageSizes={lightboxSizes(photo)}
+					/>
+				) : (
+					<link key={photo.id} rel="preload" as="image" href={photo.src} />
+				);
+			})}
 			<button
 				type="button"
 				className="lightbox-backdrop-in absolute inset-0 border-0 bg-black/78 backdrop-blur-md"
@@ -197,15 +271,17 @@ export function PhotoLightbox({
 						aria-label="Close image viewer"
 						className="pointer-events-auto relative inline-flex max-w-full cursor-zoom-out border-0 bg-transparent p-0"
 					>
-						<Image
+						<PhotoPicture
 							src={activePhoto.src}
 							alt={activePhoto.alt}
 							width={activePhoto.width}
 							height={activePhoto.height}
-							unoptimized
-							loading="eager"
-							fetchPriority="high"
-							className={`h-auto ${LIGHTBOX_IMAGE_MAX_HEIGHT_CLASS} w-auto max-w-full rounded-xl border border-white/10 object-contain`}
+							sizes={lightboxSizes(activePhoto)}
+							variantRole="display"
+							variants={activePhoto.variants ?? null}
+							priority
+							layout="intrinsic"
+							className={`${LIGHTBOX_IMAGE_MAX_HEIGHT_CLASS} rounded-xl border border-white/10 object-contain`}
 						/>
 					</button>
 				)}

@@ -72,6 +72,37 @@ html {
 	}
 }
 
+.animate-bento-in {
+	animation-name: bento-in;
+	animation-duration: 0.75s;
+	animation-timing-function: cubic-bezier(0.22, 1, 0.36, 1);
+	animation-delay: var(--bento-delay, 0s);
+	animation-fill-mode: both;
+}
+
+.bento-card-tilt {
+	transform: perspective(1000px) rotateX(var(--rx, 0deg))
+		rotateY(var(--ry, 0deg)) scale(calc(var(--lift, 1) * 1.007));
+	transition: transform 0.22s ease-out;
+	backface-visibility: hidden;
+}
+
+.animate-page-header {
+	animation: page-header-in 0.65s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+}
+
+.animate-resume-in {
+	animation: resume-in 0.62s cubic-bezier(0.22, 1, 0.36, 1) both;
+	animation-delay: var(--resume-delay, 0s);
+}
+
+.animate-hero-copy {
+	animation: hero-copy-in 0.7s cubic-bezier(0.22, 1, 0.36, 1) both;
+	animation-delay: var(--hero-delay, 0s);
+}
+
+/* Must stay below the rules above: a media query adds no specificity, so these
+   overrides only win by being later in the cascade. */
 @media (prefers-reduced-motion: reduce) {
 	.animate-bento-in {
 		animation: none;
@@ -102,35 +133,6 @@ html {
 		transform: none;
 		transition: none;
 	}
-}
-
-.animate-bento-in {
-	animation-name: bento-in;
-	animation-duration: 0.75s;
-	animation-timing-function: cubic-bezier(0.22, 1, 0.36, 1);
-	animation-delay: var(--bento-delay, 0s);
-	animation-fill-mode: both;
-}
-
-.bento-card-tilt {
-	transform: perspective(1000px) rotateX(var(--rx, 0deg))
-		rotateY(var(--ry, 0deg)) scale(calc(var(--lift, 1) * 1.007));
-	transition: transform 0.22s ease-out;
-	backface-visibility: hidden;
-}
-
-.animate-page-header {
-	animation: page-header-in 0.65s cubic-bezier(0.22, 1, 0.36, 1) forwards;
-}
-
-.animate-resume-in {
-	animation: resume-in 0.62s cubic-bezier(0.22, 1, 0.36, 1) both;
-	animation-delay: var(--resume-delay, 0s);
-}
-
-.animate-hero-copy {
-	animation: hero-copy-in 0.7s cubic-bezier(0.22, 1, 0.36, 1) both;
-	animation-delay: var(--hero-delay, 0s);
 }
 
 .route-stage {
@@ -180,6 +182,45 @@ html {
 [data-rv-pending] {
 	opacity: 0;
 	transform: translateY(18px);
+}
+
+/* Photo grid items wait for the observer in `use-staggered-reveal` to hand them
+   a batch-relative `--bento-delay`. */
+[data-photo-pending] {
+	opacity: 0;
+	transform: translateY(12px);
+}
+
+[data-photo-revealed] {
+	animation: bento-in 0.75s var(--ease-out-quint) both;
+	animation-delay: var(--bento-delay, 0s);
+}
+
+/* Positioned imperatively on mount, so the transition is withheld until after
+   the first placement to stop it sliding in from the row origin. */
+.photo-filter-pill {
+	opacity: 0;
+}
+
+.photo-filter-pill[data-ready] {
+	opacity: 1;
+	transition:
+		transform 0.5s var(--ease-out-quint),
+		width 0.5s var(--ease-out-quint),
+		opacity 0.3s ease-out;
+}
+
+.photo-skeleton::after {
+	content: "";
+	position: absolute;
+	inset: 0;
+	background: linear-gradient(
+		90deg,
+		transparent,
+		rgba(255, 255, 255, 0.06),
+		transparent
+	);
+	animation: photo-shimmer 1.6s ease-in-out infinite;
 }
 
 .ambient-blob-a {
@@ -382,6 +423,15 @@ html {
 	}
 }
 
+@keyframes photo-shimmer {
+	from {
+		transform: translateX(-100%);
+	}
+	to {
+		transform: translateX(100%);
+	}
+}
+
 @keyframes lightbox-backdrop-in {
 	from {
 		opacity: 0;
@@ -432,6 +482,8 @@ html {
 	.case-study-mount,
 	.case-study-mount-line,
 	[data-rv-pending],
+	[data-photo-pending],
+	[data-photo-revealed],
 	.ambient-blob-a,
 	.ambient-blob-b,
 	.animate-ping-dot {
@@ -439,6 +491,16 @@ html {
 		transition: none;
 		opacity: 1;
 		transform: none;
+	}
+
+	.photo-filter-pill,
+	.photo-filter-pill[data-ready] {
+		transition: none;
+		opacity: 1;
+	}
+
+	.photo-skeleton::after {
+		animation: none;
 	}
 
 	.cs-nav-badge {

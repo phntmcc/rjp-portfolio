@@ -1,3 +1,4 @@
+import { type PhotoVariants, parsePhotoVariants } from "@/lib/photo-variants";
 import {
 	DEFAULT_PHOTO_HEIGHT,
 	DEFAULT_PHOTO_WIDTH,
@@ -25,6 +26,7 @@ type PhotoRow = {
 	width: number | null;
 	height: number | null;
 	blur_data_url: string | null;
+	variants: unknown;
 	created_at: string;
 };
 
@@ -39,6 +41,8 @@ type HomePhotoRow = {
 	display_url: string;
 	width: number | null;
 	height: number | null;
+	blur_data_url: string | null;
+	variants: unknown;
 };
 
 export type PhotographyPhoto = {
@@ -57,6 +61,7 @@ export type PhotographyPhoto = {
 	width: number;
 	height: number;
 	blurDataUrl: string | null;
+	variants: PhotoVariants | null;
 	createdAt: string;
 };
 
@@ -76,6 +81,8 @@ export type HomePhotographyPhoto = {
 	iso: string;
 	aperture: string;
 	shutterSpeed: string;
+	blurDataUrl: string | null;
+	variants: PhotoVariants | null;
 };
 
 export type PhotographyPhotoPage = {
@@ -113,6 +120,7 @@ function mapPhotoRow(row: PhotoRow): PhotographyPhoto {
 		width: row.width ?? DEFAULT_PHOTO_WIDTH,
 		height: row.height ?? DEFAULT_PHOTO_HEIGHT,
 		blurDataUrl: row.blur_data_url,
+		variants: parsePhotoVariants(row.variants),
 		createdAt: row.created_at,
 	};
 }
@@ -137,7 +145,7 @@ export async function getPhotographyPhotosPage({
 	let query = supabase
 		.from("photos")
 		.select(
-			"id,title,description,location_name,location_slug,shot_at,iso,aperture,shutter_speed,thumb_url,display_url,width,height,blur_data_url,created_at",
+			"id,title,description,location_name,location_slug,shot_at,iso,aperture,shutter_speed,thumb_url,display_url,width,height,blur_data_url,variants,created_at",
 		)
 		.order("shot_at", { ascending: false, nullsFirst: false })
 		.order("created_at", { ascending: false })
@@ -217,6 +225,8 @@ function mapToHomePhoto(row: HomePhotoRow): HomePhotographyPhoto {
 		iso: row.iso ?? "N/A",
 		aperture: row.aperture ?? "N/A",
 		shutterSpeed: row.shutter_speed ?? "N/A",
+		blurDataUrl: row.blur_data_url,
+		variants: parsePhotoVariants(row.variants),
 	};
 }
 
@@ -233,7 +243,7 @@ export async function getRandomHomePhotographyPhoto() {
 	const { data, error } = await supabase
 		.from("photos")
 		.select(
-			"id,location_name,shot_at,iso,aperture,shutter_speed,thumb_url,display_url,width,height",
+			"id,location_name,shot_at,iso,aperture,shutter_speed,thumb_url,display_url,width,height,blur_data_url,variants",
 		)
 		.not("width", "is", null)
 		.not("height", "is", null)

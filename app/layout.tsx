@@ -10,6 +10,7 @@ import { SiteHeader } from "@/components/layout/site-header";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { site } from "@/content/home";
 import { SITE_CONTAINER_MAX_WIDTH_CLASS } from "@/lib/layout-constants";
+import { getSupabaseOrigin } from "@/lib/supabase/env";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -69,12 +70,22 @@ export const metadata: Metadata = {
 };
 
 export default function RootLayout({ children }: { children: ReactNode }) {
+	const supabaseOrigin = getSupabaseOrigin();
+
 	return (
 		<html
 			lang="en"
 			className={`${geistSans.variable} ${geistMono.variable} ${playfair.variable} h-full antialiased`}
 		>
 			<body className="flex min-h-full flex-col bg-[#0a0a0a] text-neutral-100">
+				{/* Photos come from a third-party origin, so the DNS and TLS
+				    handshake would otherwise sit on the critical path. */}
+				{supabaseOrigin ? (
+					<>
+						<link rel="preconnect" href={supabaseOrigin} crossOrigin="" />
+						<link rel="dns-prefetch" href={supabaseOrigin} />
+					</>
+				) : null}
 				<CommandMenuProvider>
 					<TooltipProvider delayDuration={80} skipDelayDuration={120}>
 						<div

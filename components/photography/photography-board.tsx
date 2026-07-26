@@ -1,16 +1,29 @@
 "use client";
 
-import Image from "next/image";
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { MasonryGalleryItem } from "@/components/gallery/masonry-gallery";
+import {
+	type CSSProperties,
+	useCallback,
+	useEffect,
+	useRef,
+	useState,
+} from "react";
 import { PhotoExpandIcon } from "@/components/icons/photo-expand";
 import { PhotoExifPanel } from "@/components/photography/photo-exif-panel";
 import {
 	type LightboxPhoto,
 	PhotoLightbox,
 } from "@/components/photography/photo-lightbox";
+import { PhotoPicture } from "@/components/photography/photo-picture";
+import { useStaggeredReveal } from "@/hooks/use-staggered-reveal";
 import type { PhotographyLocation, PhotographyPhoto } from "@/lib/photography";
-import { PHOTOGRAPHY_PAGE_SIZE } from "@/lib/photography-constants";
+import {
+	GRID_PICTURE_SOURCES,
+	GRID_PRIORITY_COUNT,
+	GRID_SIZES,
+	GRID_WIDE_PICTURE_SOURCES,
+	isWideTile,
+	PHOTOGRAPHY_PAGE_SIZE,
+} from "@/lib/photography-constants";
 
 type PhotographyBoardProps = {
 	initialPhotos: PhotographyPhoto[];
@@ -19,16 +32,37 @@ type PhotographyBoardProps = {
 	activeLocation?: string;
 };
 
+// Tailwind v4 compiles `translate-y-*` and `scale-*` to the standalone
+// `translate` and `scale` properties, so transitioning `transform` would let the
+// offset snap while only the fade animated.
+const CAPTION_MOTION =
+	"transition-[opacity,translate,scale] duration-[350ms] ease-[cubic-bezier(0.22,1,0.36,1)] motion-reduce:transition-none";
+
+/** Visible on touch, where `group-hover` never resolves; hover-gated from md up. */
+const CAPTION_TOUCH_VISIBLE =
+	"md:translate-y-2 md:opacity-0 md:group-hover:translate-y-0 md:group-hover:opacity-100";
+
+const CAPTION_HOVER_ONLY =
+	"translate-y-2 opacity-0 group-hover:translate-y-0 group-hover:opacity-100";
+
+/** Keeps the swap reading as a crossfade when the network responds instantly. */
+const FILTER_FADE_MS = 180;
+
 function buildLocationHref(slug?: string) {
 	return slug ? `/photography?location=${slug}` : "/photography";
 }
 
-function getColumnCount() {
-	if (typeof window === "undefined") return 3;
-	if (window.innerWidth >= 1280) return 3;
-	if (window.innerWidth >= 768) return 2;
-	return 1;
-}
+const COLUMN_CLASSES = "grid-cols-1 md:grid-cols-2 xl:grid-cols-3";
+
+/**
+ * Uniform tile heights are what make spanning workable. Once columns fall out of
+ * lockstep a two-column tile can only land where both columns happen to be free
+ * at the same height, and the gap it leaves is too tall to ever backfill. The
+ * library is 2:3, so taking the row height from a portrait crops nothing.
+ */
+const TILE_ASPECT = "aspect-2/3";
+/** Only used by a spanned tile with no single-column neighbour to stretch to. */
+const WIDE_TILE_ASPECT = "xl:aspect-[826/608]";
 
 export function PhotographyBoard({
 	initialPhotos,
@@ -36,30 +70,58 @@ export function PhotographyBoard({
 	locations,
 	activeLocation,
 }: PhotographyBoardProps) {
-	const hoverReveal =
-		"opacity-0 transition-[max-height,opacity] duration-200 ease-out group-hover:opacity-100";
-
 	const [selectedLocation, setSelectedLocation] = useState(
 		activeLocation ?? "",
 	);
 	const [activeIndex, setActiveIndex] = useState<number | null>(null);
 	const [photos, setPhotos] = useState(initialPhotos);
-	const [columnCount, setColumnCount] = useState(getColumnCount);
 	const [hasMore, setHasMore] = useState(initialHasMore);
 	const [nextOffset, setNextOffset] = useState(initialPhotos.length);
-	const [isLoadingMore, setIsLoadingMore] = useState(false);
+	const [isAppending, setIsAppending] = useState(false);
+	const [isSwapping, setIsSwapping] = useState(false);
 	const [loadError, setLoadError] = useState<string | null>(null);
-	const [animatedCount, setAnimatedCount] = useState(initialPhotos.length);
+	// Bumped only once a replacing fetch lands, so the outgoing grid keeps its
+	// keys (and stays mounted to fade) until the new photos are ready.
+	const [gridGeneration, setGridGeneration] = useState(0);
 	const requestVersionRef = useRef(0);
 	const sentinelRef = useRef<HTMLDivElement | null>(null);
+	const filterRowRef = useRef<HTMLDivElement | null>(null);
+	const pillRef = useRef<HTMLSpanElement | null>(null);
+	const filterButtonsRef = useRef(new Map<string, HTMLButtonElement>());
+	const registerReveal = useStaggeredReveal();
 	const locationQueryParam = selectedLocation || undefined;
+	const isBusy = isAppending || isSwapping;
+
+	const measurePill = useCallback(() => {
+		const pill = pillRef.current;
+		const active = filterButtonsRef.current.get(selectedLocation);
+		if (!pill || !active) return;
+
+		pill.style.width = `${active.offsetWidth}px`;
+		pill.style.transform = `translate3d(${active.offsetLeft}px, ${active.offsetTop}px, 0)`;
+
+		if (!pill.dataset.ready) {
+			// Commit the first placement before the transition exists, otherwise it
+			// animates in from the row origin.
+			void pill.offsetWidth;
+			pill.dataset.ready = "1";
+		}
+	}, [selectedLocation]);
 
 	useEffect(() => {
-		const syncColumns = () => setColumnCount(getColumnCount());
-		syncColumns();
-		window.addEventListener("resize", syncColumns);
-		return () => window.removeEventListener("resize", syncColumns);
-	}, []);
+		measurePill();
+
+		const row = filterRowRef.current;
+		if (!row) return;
+
+		// Catches both viewport resizes and the row rewrapping onto another line.
+		const observer = new ResizeObserver(() => measurePill());
+		observer.observe(row);
+		// Metric widths shift once the webfont swaps in.
+		void document.fonts?.ready.then(() => measurePill());
+
+		return () => observer.disconnect();
+	}, [measurePill]);
 
 	const fetchPhotosPage = useCallback(
 		async ({
@@ -101,7 +163,7 @@ export function PhotographyBoard({
 				return [...current, ...payload.photos];
 			});
 			if (!append) {
-				setAnimatedCount(payload.photos.length);
+				setGridGeneration((generation) => generation + 1);
 			}
 			setHasMore(payload.hasMore);
 			setNextOffset(payload.nextOffset);
@@ -111,8 +173,8 @@ export function PhotographyBoard({
 	);
 
 	const loadMorePhotos = useCallback(async () => {
-		if (isLoadingMore || !hasMore) return;
-		setIsLoadingMore(true);
+		if (isBusy || !hasMore) return;
+		setIsAppending(true);
 		try {
 			await fetchPhotosPage({
 				locationSlug: locationQueryParam,
@@ -122,12 +184,12 @@ export function PhotographyBoard({
 		} catch {
 			setLoadError("Could not load more photos.");
 		} finally {
-			setIsLoadingMore(false);
+			setIsAppending(false);
 		}
-	}, [fetchPhotosPage, hasMore, isLoadingMore, locationQueryParam, nextOffset]);
+	}, [fetchPhotosPage, hasMore, isBusy, locationQueryParam, nextOffset]);
 
 	useEffect(() => {
-		if (!hasMore || isLoadingMore) return;
+		if (!hasMore || isBusy) return;
 		const sentinel = sentinelRef.current;
 		if (!sentinel) return;
 
@@ -142,7 +204,7 @@ export function PhotographyBoard({
 
 		observer.observe(sentinel);
 		return () => observer.disconnect();
-	}, [hasMore, isLoadingMore, loadMorePhotos]);
+	}, [hasMore, isBusy, loadMorePhotos]);
 
 	const safeActiveIndex =
 		activeIndex !== null && activeIndex < photos.length ? activeIndex : null;
@@ -160,6 +222,7 @@ export function PhotographyBoard({
 		shutterSpeed: photo.shutterSpeed,
 		thumbUrl: photo.thumbUrl,
 		blurDataUrl: photo.blurDataUrl,
+		variants: photo.variants,
 	}));
 
 	const close = useCallback(() => setActiveIndex(null), []);
@@ -185,48 +248,29 @@ export function PhotographyBoard({
 			const next = slug ?? "";
 			if (next === selectedLocation) return;
 
-			const nextHref = buildLocationHref(next || undefined);
-			const applyFilter = () => {
-				setSelectedLocation(next);
-				setActiveIndex(null);
-				window.history.replaceState({}, "", nextHref);
-			};
-
-			const supportsViewTransitions = Boolean(
-				typeof document !== "undefined" &&
-					"startViewTransition" in document &&
-					typeof (
-						document as Document & {
-							startViewTransition: (callback: () => void) => void;
-						}
-					).startViewTransition === "function",
-			);
-
-			if (supportsViewTransitions) {
-				(
-					document as Document & {
-						startViewTransition: (callback: () => void) => void;
-					}
-				).startViewTransition(applyFilter);
-			} else {
-				applyFilter();
-			}
-
+			// Discards any append still in flight for the previous location.
 			requestVersionRef.current += 1;
-			setIsLoadingMore(true);
+			setSelectedLocation(next);
+			setActiveIndex(null);
+			window.history.replaceState({}, "", buildLocationHref(next || undefined));
+			setIsSwapping(true);
+
 			try {
-				await fetchPhotosPage({
-					locationSlug: next || undefined,
-					offset: 0,
-					append: false,
-				});
+				await Promise.all([
+					fetchPhotosPage({
+						locationSlug: next || undefined,
+						offset: 0,
+						append: false,
+					}),
+					new Promise((resolve) => setTimeout(resolve, FILTER_FADE_MS)),
+				]);
 			} catch {
 				setPhotos([]);
 				setHasMore(true);
 				setNextOffset(0);
 				setLoadError("Could not load photos for this location.");
 			} finally {
-				setIsLoadingMore(false);
+				setIsSwapping(false);
 			}
 		},
 		[fetchPhotosPage, selectedLocation],
@@ -241,141 +285,174 @@ export function PhotographyBoard({
 		[open, photos],
 	);
 
-	const photoColumns = useMemo(() => {
-		const columns = Array.from({ length: columnCount }, (_, columnNumber) => {
-			return {
-				id: `column-${columnNumber + 1}`,
-				height: 0,
-				items: [] as Array<{ photo: PhotographyPhoto; index: number }>,
-			};
-		});
-
-		for (const [index, photo] of photos.entries()) {
-			let targetColumn = 0;
-			for (let i = 1; i < columns.length; i += 1) {
-				if (columns[i].height < columns[targetColumn].height) {
-					targetColumn = i;
-				}
+	const registerFilterButton = useCallback(
+		(slug: string) => (node: HTMLButtonElement | null) => {
+			if (node) {
+				filterButtonsRef.current.set(slug, node);
+				return;
 			}
+			filterButtonsRef.current.delete(slug);
+		},
+		[],
+	);
 
-			columns[targetColumn].items.push({ photo, index });
-			columns[targetColumn].height += photo.height / photo.width;
-		}
+	const skeletonKeys = ["skeleton-1", "skeleton-2", "skeleton-3"];
 
-		return columns;
-	}, [columnCount, photos]);
+	const filterOptions = [
+		{ slug: "", name: "All" },
+		...locations.map((location) => ({
+			slug: location.slug,
+			name: location.name,
+		})),
+	];
 
 	return (
 		<>
-			<div className="mb-6 flex flex-wrap items-center gap-2">
-				<button
-					type="button"
-					onClick={() => void handleFilterSelect()}
-					className={`cursor-pointer rounded-full border px-3 py-1.5 text-xs transition ${!selectedLocation ? "border-white/30 bg-white/10 text-white" : "border-white/10 bg-white/3 text-neutral-300 hover:bg-white/8 hover:text-white"}`}
-				>
-					All
-				</button>
-				{locations.map((location) => (
+			<div
+				ref={filterRowRef}
+				className="relative mb-6 flex flex-wrap items-center gap-2"
+			>
+				<span
+					ref={pillRef}
+					aria-hidden
+					className="photo-filter-pill pointer-events-none absolute left-0 top-0 h-[30px] rounded-full border border-white/30 bg-white/10"
+				/>
+				{filterOptions.map((option) => (
 					<button
+						key={option.slug || "all"}
+						ref={registerFilterButton(option.slug)}
 						type="button"
-						onClick={() => void handleFilterSelect(location.slug)}
-						key={location.slug}
-						className={`cursor-pointer rounded-full border px-3 py-1.5 text-xs transition ${selectedLocation === location.slug ? "border-white/30 bg-white/10 text-white" : "border-white/10 bg-white/3 text-neutral-300 hover:bg-white/8 hover:text-white"}`}
+						onClick={() => void handleFilterSelect(option.slug || undefined)}
+						className={`relative z-10 cursor-pointer rounded-full border border-transparent px-3 py-1.5 text-xs transition-colors duration-300 ${
+							selectedLocation === option.slug
+								? "text-white"
+								: "text-neutral-300 hover:text-white"
+						}`}
 					>
-						{location.name}
+						{option.name}
 					</button>
 				))}
 			</div>
 
-			{photos.length === 0 ? (
+			{photos.length === 0 && !isSwapping ? (
 				<div className="rounded-2xl border border-white/10 bg-white/3 p-6">
 					<p className="text-sm text-neutral-400">
 						No photos found for this location yet.
 					</p>
 				</div>
-			) : (
-				<div
-					className={`grid gap-4 ${
-						columnCount === 1
-							? "grid-cols-1"
-							: columnCount === 2
-								? "grid-cols-2"
-								: "grid-cols-3"
-					}`}
-				>
-					{photoColumns.map((column) => (
-						<div
-							key={`${selectedLocation || "all"}-${column.id}`}
-							className="flex flex-col gap-4"
+			) : null}
+
+			<div
+				aria-busy={isSwapping}
+				className={`grid grid-flow-row-dense gap-4 transition-[opacity,translate] duration-200 ease-out motion-reduce:transition-none ${COLUMN_CLASSES} ${
+					isSwapping ? "translate-y-1 opacity-0" : "translate-y-0 opacity-100"
+				}`}
+			>
+				{photos.map((photo, index) => {
+					// The first rows carry the LCP, so they must not wait on hydration
+					// behind an opacity gate.
+					const deferred = index >= GRID_PRIORITY_COUNT;
+					const hasExif = Boolean(
+						photo.iso || photo.aperture || photo.shutterSpeed,
+					);
+					const wide = isWideTile(photo.width, photo.height);
+
+					return (
+						<figure
+							key={`${gridGeneration}-${photo.id}`}
+							ref={deferred ? registerReveal : undefined}
+							data-photo-pending={deferred ? "" : undefined}
+							style={
+								deferred
+									? undefined
+									: ({
+											"--bento-delay": `${0.04 + index * 0.04}s`,
+										} as CSSProperties)
+							}
+							className={`group overflow-hidden rounded-2xl border border-white/10 bg-white/3 ${TILE_ASPECT} ${
+								deferred ? "" : "animate-bento-in"
+							} ${wide ? `xl:col-span-2 ${WIDE_TILE_ASPECT}` : ""}`}
 						>
-							{column.items.map(({ photo, index }) => (
-								<MasonryGalleryItem
-									key={`${selectedLocation || "all"}-${photo.id}`}
-									className="group"
-									animate={index < animatedCount}
-									delay={0.04 + index * 0.02}
+							<button
+								type="button"
+								onClick={() => handleOpenPhoto(photo.id)}
+								className="relative block h-full w-full cursor-zoom-in border-0 bg-transparent p-0 text-left"
+								aria-label={`Open ${photo.locationName} photo in full-size viewer`}
+							>
+								<PhotoPicture
+									src={photo.thumbUrl}
+									alt={photo.title ?? `${photo.locationName} photo`}
+									width={photo.width}
+									height={photo.height}
+									sizes={GRID_SIZES}
+									sources={
+										wide ? GRID_WIDE_PICTURE_SOURCES : GRID_PICTURE_SOURCES
+									}
+									variantRole="grid"
+									variants={photo.variants}
+									blurDataUrl={photo.blurDataUrl}
+									priority={index < GRID_PRIORITY_COUNT}
+									layout="cover"
+									className="transition-transform duration-500 ease-[cubic-bezier(0.22,1,0.36,1)] group-hover:scale-[1.03] motion-reduce:transition-none motion-reduce:group-hover:scale-100"
+								/>
+								<div
+									aria-hidden
+									className="pointer-events-none absolute inset-x-0 bottom-0 h-40 bg-linear-to-t from-black/75 to-transparent opacity-90 transition-opacity duration-300 group-hover:opacity-100 motion-reduce:transition-none"
+								/>
+
+								<div
+									className={`pointer-events-none absolute right-3 top-3 z-10 scale-95 opacity-0 group-hover:scale-100 group-hover:opacity-100 ${CAPTION_MOTION}`}
 								>
-									<button
-										type="button"
-										onClick={() => handleOpenPhoto(photo.id)}
-										className="relative block w-full cursor-zoom-in border-0 bg-transparent p-0 text-left"
-										aria-label={`Open ${photo.locationName} photo in full-size viewer`}
+									<div
+										className="flex size-8 shrink-0 items-center justify-center rounded-full border border-[rgba(255,255,255,0.1)] bg-[rgba(0,0,0,0.302)]"
+										aria-hidden
 									>
-										<Image
-											src={photo.thumbUrl}
-											alt={photo.title ?? `${photo.locationName} photo`}
-											width={photo.width}
-											height={photo.height}
-											unoptimized
-											placeholder={photo.blurDataUrl ? "blur" : "empty"}
-											blurDataURL={photo.blurDataUrl ?? undefined}
-											className="block h-auto w-full transition duration-300 ease-out group-hover:scale-[1.01]"
-										/>
-										<div
-											aria-hidden
-											className="pointer-events-none absolute inset-x-0 bottom-0 h-40 bg-linear-to-t from-black/75 to-transparent"
-										/>
+										<PhotoExpandIcon className="size-4 text-[#d4d4d4]" />
+									</div>
+								</div>
 
+								<div className="pointer-events-none absolute inset-x-0 bottom-0 z-10 p-3">
+									{hasExif ? (
 										<div
-											className={`pointer-events-none absolute right-3 top-3 z-10 max-h-0 overflow-hidden ${hoverReveal} group-hover:max-h-12`}
+											className={`mb-2 hidden delay-0 group-hover:delay-[80ms] md:block ${CAPTION_MOTION} ${CAPTION_HOVER_ONLY}`}
 										>
-											<div
-												className="flex size-8 shrink-0 items-center justify-center rounded-full border border-[rgba(255,255,255,0.1)] bg-[rgba(0,0,0,0.302)]"
-												aria-hidden
-											>
-												<PhotoExpandIcon className="size-4 text-[#d4d4d4]" />
-											</div>
-										</div>
-
-										<div className="pointer-events-none absolute inset-x-0 bottom-0 z-10 p-3">
 											<PhotoExifPanel
 												iso={photo.iso}
 												aperture={photo.aperture}
 												shutterSpeed={photo.shutterSpeed}
-												className={`mb-2 max-h-0 overflow-hidden ${hoverReveal} group-hover:max-h-40`}
 											/>
-											<p
-												className={`max-h-0 overflow-hidden font-serif text-xl text-white ${hoverReveal} group-hover:max-h-12`}
-											>
-												{photo.locationName}
-											</p>
-											<p
-												className={`max-h-0 overflow-hidden text-xs text-neutral-300 ${hoverReveal} group-hover:max-h-8`}
-											>
-												{photo.shotAtLabel}
-											</p>
 										</div>
-									</button>
-								</MasonryGalleryItem>
-							))}
-						</div>
+									) : null}
+									<p
+										className={`font-serif text-xl text-white ${CAPTION_MOTION} ${CAPTION_TOUCH_VISIBLE}`}
+									>
+										{photo.locationName}
+									</p>
+									<p
+										className={`text-xs text-neutral-300 delay-0 group-hover:delay-[40ms] ${CAPTION_MOTION} ${CAPTION_TOUCH_VISIBLE}`}
+									>
+										{photo.shotAtLabel}
+									</p>
+								</div>
+							</button>
+						</figure>
+					);
+				})}
+			</div>
+			<div ref={sentinelRef} aria-hidden className="h-4" />
+			{isAppending ? (
+				<div aria-hidden className={`mt-4 grid gap-4 ${COLUMN_CLASSES}`}>
+					{skeletonKeys.map((key) => (
+						<div
+							key={key}
+							className={`photo-skeleton relative overflow-hidden rounded-2xl border border-white/10 bg-white/3 ${TILE_ASPECT}`}
+						/>
 					))}
 				</div>
-			)}
-			<div ref={sentinelRef} aria-hidden className="h-4" />
-			{isLoadingMore ? (
-				<p className="mt-4 text-xs text-neutral-400">Loading more photos...</p>
 			) : null}
+			<p className="sr-only" role="status">
+				{isAppending ? "Loading more photos" : ""}
+			</p>
 			{loadError ? (
 				<div className="mt-4 flex items-center gap-2">
 					<p className="text-xs text-neutral-400">{loadError}</p>
